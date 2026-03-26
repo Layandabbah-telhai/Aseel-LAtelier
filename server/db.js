@@ -1,22 +1,18 @@
 const mysql = require("mysql2/promise");
 
 function createPoolFromEnv() {
-  const {
-    DB_HOST = "127.0.0.1",
-    DB_PORT = "3306",
-    DB_USER = "root",
-    DB_PASSWORD = "",
-    DB_NAME = "aseel_atelier_db",
-  } = process.env;
-
   return mysql.createPool({
-    host: DB_HOST,
-    port: Number(DB_PORT),
-    user: DB_USER,
-    password: DB_PASSWORD,
-    database: DB_NAME,
+    host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT || 3306),
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
     waitForConnections: true,
     connectionLimit: 10,
+    queueLimit: 0,
+    ssl: {
+      rejectUnauthorized: false,
+    },
   });
 }
 
