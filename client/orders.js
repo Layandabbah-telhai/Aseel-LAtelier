@@ -1,6 +1,7 @@
-const ENDPOINT = "/api/orders";
-const CUSTOMERS_ENDPOINT = "/api/customers";
-const DRESSES_ENDPOINT = "/api/dresses";
+const API_BASE = "https://aseel-latelier-production.up.railway.app/api";
+const ENDPOINT = `${API_BASE}/orders`;
+const CUSTOMERS_ENDPOINT = `${API_BASE}/customers`;
+const DRESSES_ENDPOINT = `${API_BASE}/dresses`;
 
 const searchInput = document.getElementById("searchInput");
 const searchBtn = document.getElementById("searchBtn");

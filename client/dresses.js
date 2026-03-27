@@ -1,5 +1,6 @@
-const ENDPOINT = "/api/dresses";
-const UPLOAD_ENDPOINT = "/api/upload-image";
+const API_BASE = "https://aseel-latelier-production.up.railway.app/api";
+const ENDPOINT = `${API_BASE}/dresses`;
+const UPLOAD_ENDPOINT = `${API_BASE}/upload-image`;
 
 const tbody = document.getElementById("dressesTbody");
 const searchInput = document.getElementById("searchInput");

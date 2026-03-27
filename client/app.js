@@ -1,4 +1,5 @@
-const ENDPOINT = "/api/customers";
+const API_BASE = "https://aseel-latelier-production.up.railway.app/api";
+const ENDPOINT = `${API_BASE}/customers`;
 
 // Elements
 const tbody = document.getElementById("customersTbody");
