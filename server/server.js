@@ -68,7 +68,7 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5 MB
+    fileSize: 5 * 1024 * 1024,
   },
   fileFilter: (req, file, cb) => {
     const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -93,9 +93,11 @@ app.post("/api/upload-image", (req, res) => {
       });
     }
 
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+
     res.status(201).json({
       message: "Image uploaded successfully",
-      image_url: `/images/${req.file.filename}`,
+      image_url: `${baseUrl}/images/${req.file.filename}`,
       filename: req.file.filename,
     });
   });
@@ -118,19 +120,15 @@ const ordersRouter = createOrdersRouter(ordersController);
 
 // ---------- API routes ----------
 app.use("/api/customers", customersRouter);
-app.use("/api/costumers", customersRouter); // backward compatibility
+app.use("/api/costumers", customersRouter);
 app.use("/api/dresses", dressesRouter);
 app.use("/api/orders", ordersRouter);
 
 // ---------- Static files ----------
 const publicPath = path.join(__dirname, "..");
 
+app.use("/images", express.static(path.join(publicPath, "client", "images")));
 app.use(express.static(publicPath));
-
-app.use(
-  "/images",
-  express.static(path.join(__dirname, "..", "client", "images"))
-);
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(publicPath, "index.html"));
