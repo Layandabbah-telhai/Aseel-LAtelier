@@ -68,12 +68,16 @@
   </div>
 
   <script>
+    const API_BASE = "https://aseel-latelier-production.up.railway.app/api";
+    const DRESSES_ENDPOINT = `${API_BASE}/dresses`;
+    const FALLBACK_IMAGE = "./client/logo.png";
+
     async function loadCatalog() {
       const grid = document.getElementById("catalogGrid");
 
       try {
-        const res = await fetch("/api/dresses");
-        if (!res.ok) throw new Error("Failed to load dresses");
+        const res = await fetch(DRESSES_ENDPOINT);
+        if (!res.ok) throw new Error(`Failed to load dresses (${res.status})`);
 
         const dresses = await res.json();
 
@@ -88,35 +92,53 @@
           return;
         }
 
-        grid.innerHTML = dresses.map(d => `
-          <div class="col-md-6 col-lg-4">
-            <div class="card card-luxe h-100">
-              <img
-                src="${escapeHtml(d.image_url || '/client/logo.png')}"
-                class="catalog-img"
-                alt="${escapeHtml(d.dress_name)}"
-                onerror="this.src='/client/logo.png'"
-              >
-              <div class="card-body">
-                <h5 class="catalog-title">${escapeHtml(d.dress_name)}</h5>
-                <p class="catalog-text mb-2">
-                  Color: ${escapeHtml(d.color || '-')}<br>
-                  Size: ${escapeHtml(d.size || '-')}<br>
-                  Rental: ${formatPrice(d.rental_price)}<br>
-                  Sale: ${formatPrice(d.sale_price)}
-                </p>
-                <span class="catalog-status ${statusClass(d.status)}">
-                  ${escapeHtml(d.status || 'Unknown')}
-                </span>
+        grid.innerHTML = dresses.map(d => {
+          const primaryImage =
+            Array.isArray(d.images) && d.images.length
+              ? d.images[0].image_url
+              : (d.image_url || FALLBACK_IMAGE);
+
+          const imageCount = Array.isArray(d.images)
+            ? d.images.length
+            : (d.image_url ? 1 : 0);
+
+          return `
+            <div class="col-md-6 col-lg-4">
+              <div class="card card-luxe h-100 overflow-hidden">
+                <img
+                  src="${escapeHtml(primaryImage)}"
+                  class="catalog-img"
+                  alt="${escapeHtml(d.dress_name)}"
+                  onerror="this.src='${FALLBACK_IMAGE}'"
+                >
+                <div class="card-body">
+                  <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                    <h5 class="catalog-title mb-0">${escapeHtml(d.dress_name)}</h5>
+                    <span class="badge-soft px-3 py-2 rounded-pill">
+                      ${imageCount} image${imageCount === 1 ? "" : "s"}
+                    </span>
+                  </div>
+
+                  <p class="catalog-text mb-2">
+                    Color: ${escapeHtml(d.color || "-")}<br>
+                    Size: ${escapeHtml(d.size || "-")}<br>
+                    Rental: ${formatPrice(d.rental_price)}<br>
+                    Sale: ${formatPrice(d.sale_price)}
+                  </p>
+
+                  <span class="catalog-status ${statusClass(d.status)}">
+                    ${escapeHtml(d.status || "Unknown")}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        `).join("");
+          `;
+        }).join("");
       } catch (error) {
         grid.innerHTML = `
           <div class="col-12">
             <div class="card card-luxe">
-              <div class="card-body text-center text-danger">${error.message}</div>
+              <div class="card-body text-center text-danger">${escapeHtml(error.message)}</div>
             </div>
           </div>
         `;
