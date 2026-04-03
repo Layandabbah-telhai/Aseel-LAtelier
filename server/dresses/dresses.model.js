@@ -24,7 +24,7 @@ class DressesModel {
   async attachImagesToDresses(dresses) {
     if (!dresses.length) return dresses;
 
-    const ids = dresses.map(d => d.dress_id);
+    const ids = dresses.map((d) => d.dress_id);
     const placeholders = ids.map(() => "?").join(",");
 
     const [images] = await this.db.query(
@@ -71,10 +71,9 @@ class DressesModel {
             OR color LIKE ?
             OR status LIKE ?
             OR notes LIKE ?
-            OR image_url LIKE ?
          ORDER BY dress_id DESC
          LIMIT 500`,
-        [like, like, like, like, like, like]
+        [like, like, like, like, like]
       );
     }
 
@@ -92,7 +91,17 @@ class DressesModel {
     return this.attachImagesToDress(rows[0] || null);
   }
 
-  async create({ dress_name, size, color, status, rental_price, sale_price, notes, image_url, image_urls = [] }) {
+  async create({
+    dress_name,
+    size,
+    color,
+    status,
+    rental_price,
+    sale_price,
+    notes,
+    image_url,
+    image_urls = [],
+  }) {
     const firstImage = image_urls[0] || image_url || null;
 
     const [result] = await this.db.query(
@@ -129,7 +138,10 @@ class DressesModel {
     return this.getById(dressId);
   }
 
-  async update(dress_id, { dress_name, size, color, status, rental_price, sale_price, notes, image_url, image_urls = [] }) {
+  async update(
+    dress_id,
+    { dress_name, size, color, status, rental_price, sale_price, notes, image_url, image_urls = [] }
+  ) {
     let firstImage = image_url || null;
 
     if (image_urls.length) {
@@ -161,10 +173,7 @@ class DressesModel {
     );
 
     if (image_urls.length) {
-      await this.db.query(
-        `DELETE FROM \`${this.imagesTable}\` WHERE dress_id = ?`,
-        [dress_id]
-      );
+      await this.db.query(`DELETE FROM \`${this.imagesTable}\` WHERE dress_id = ?`, [dress_id]);
 
       const values = image_urls.map((url, index) => [dress_id, url, index]);
       await this.db.query(

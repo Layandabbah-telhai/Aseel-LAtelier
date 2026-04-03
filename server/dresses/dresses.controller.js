@@ -1,8 +1,6 @@
 function normalizeDressInput(body) {
   const imageUrls = Array.isArray(body?.image_urls)
-    ? body.image_urls
-        .map(v => String(v || "").trim())
-        .filter(Boolean)
+    ? body.image_urls.map((v) => String(v || "").trim()).filter(Boolean)
     : [];
 
   return {
@@ -32,11 +30,6 @@ function validateDressInput(data) {
   if (data.size.length > 10) return "size too long";
   if (data.color.length > 30) return "color too long";
   if (data.status.length > 20) return "status too long";
-  if (data.image_url.length > 500) return "image_url too long";
-
-  for (const url of data.image_urls) {
-    if (url.length > 500) return "one of image_urls is too long";
-  }
 
   if (data.rental_price !== null && Number.isNaN(data.rental_price)) {
     return "rental_price must be a number";

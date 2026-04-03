@@ -1,6 +1,7 @@
 const API_BASE = "https://aseel-latelier-production.up.railway.app/api";
 const ENDPOINT = `${API_BASE}/dresses`;
 const UPLOAD_ENDPOINT = `${API_BASE}/upload-image`;
+const FALLBACK_IMAGE = "./logo.png";
 
 const tbody = document.getElementById("dressesTbody");
 const searchInput = document.getElementById("searchInput");
@@ -64,29 +65,35 @@ function renderStatusBadge(status) {
   return `<span class="rounded-pill px-3 py-2 d-inline-block" style="${style}">${safe}</span>`;
 }
 
+function validImages(images = []) {
+  return images.filter(Boolean);
+}
+
 function getExistingImages() {
   try {
-    return JSON.parse(existingImageUrls.value || "[]");
+    return validImages(JSON.parse(existingImageUrls.value || "[]"));
   } catch {
     return [];
   }
 }
 
 function setExistingImages(images) {
-  existingImageUrls.value = JSON.stringify(images || []);
+  existingImageUrls.value = JSON.stringify(validImages(images || []));
 }
 
 function renderPreviewGallery(urls = []) {
-  if (!urls.length) {
+  const safeUrls = validImages(urls);
+
+  if (!safeUrls.length) {
     imagePreviewGallery.innerHTML = `
       <div class="gallery-empty">No images selected</div>
     `;
     return;
   }
 
-  imagePreviewGallery.innerHTML = urls.map(url => `
+  imagePreviewGallery.innerHTML = safeUrls.map(url => `
     <div class="gallery-preview-item">
-      <img src="${escapeHtml(url)}" alt="Dress image" onerror="this.src='./logo.png'">
+      <img src="${escapeHtml(url)}" alt="Dress image" onerror="this.src='${FALLBACK_IMAGE}'">
     </div>
   `).join("");
 }
@@ -171,7 +178,10 @@ function renderDresses(dresses) {
   }
 
   tbody.innerHTML = dresses.map(d => {
-    const images = Array.isArray(d.images) ? d.images : [];
+    const images = Array.isArray(d.images) && d.images.length
+      ? d.images
+      : (d.image_url ? [{ image_url: d.image_url }] : []);
+
     const galleryHtml = images.length
       ? `
         <div class="table-gallery">
@@ -180,7 +190,7 @@ function renderDresses(dresses) {
               src="${escapeHtml(img.image_url)}"
               alt="${escapeHtml(d.dress_name)}"
               class="table-dress-img"
-              onerror="this.src='./logo.png'"
+              onerror="this.src='${FALLBACK_IMAGE}'"
             >
           `).join("")}
           ${images.length > 3 ? `<span class="gallery-more">+${images.length - 3}</span>` : ""}
@@ -188,7 +198,7 @@ function renderDresses(dresses) {
       `
       : `
         <img
-          src="./logo.png"
+          src="${FALLBACK_IMAGE}"
           alt="${escapeHtml(d.dress_name)}"
           class="table-dress-img"
         >
@@ -282,9 +292,10 @@ window.editDress = async function (id) {
   notes.value = d.notes || "";
   imageFile.value = "";
 
-  const imageUrls = Array.isArray(d.images) && d.images.length
-    ? d.images.map(img => img.image_url)
-    : (d.image_url ? [d.image_url] : []);
+  const imageUrls =
+    Array.isArray(d.images) && d.images.length
+      ? d.images.map(img => img.image_url)
+      : (d.image_url ? [d.image_url] : []);
 
   setExistingImages(imageUrls);
   renderPreviewGallery(imageUrls);

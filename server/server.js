@@ -2,7 +2,6 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-const fs = require("fs");
 const multer = require("multer");
 
 const { createPoolFromEnv } = require("./db");
@@ -22,11 +21,10 @@ const createOrdersRouter = require("./orders/orders.routes");
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "25mb" }));
 
 const dbPool = createPoolFromEnv();
 
-// ---------- Debug / health ----------
 app.get("/api/health", (req, res) => {
   res.json({ ok: true });
 });
@@ -44,29 +42,8 @@ app.get("/api/db-test", async (req, res) => {
   }
 });
 
-// ---------- Uploads ----------
-const imagesDir = path.join(__dirname, "..", "client", "images");
-fs.mkdirSync(imagesDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, imagesDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname || "").toLowerCase();
-    const safeBase = path
-      .basename(file.originalname || "dress-image", ext)
-      .replace(/[^a-zA-Z0-9-_]/g, "-")
-      .replace(/-+/g, "-")
-      .toLowerCase();
-
-    const uniqueName = `${Date.now()}-${safeBase}${ext || ".jpg"}`;
-    cb(null, uniqueName);
-  },
-});
-
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 5 * 1024 * 1024,
   },
@@ -93,41 +70,34 @@ app.post("/api/upload-image", (req, res) => {
       });
     }
 
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const imageUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
 
     res.status(201).json({
       message: "Image uploaded successfully",
-      image_url: `${baseUrl}/images/${req.file.filename}`,
-      filename: req.file.filename,
+      image_url: imageUrl,
+      filename: req.file.originalname || "image",
     });
   });
 });
 
-// ---------- Customers ----------
 const customersModel = new CostumersModel(dbPool);
 const customersController = new CostumersController(customersModel);
 const customersRouter = createCostumersRouter(customersController);
 
-// ---------- Dresses ----------
 const dressesModel = new DressesModel(dbPool);
 const dressesController = new DressesController(dressesModel);
 const dressesRouter = createDressesRouter(dressesController);
 
-// ---------- Orders ----------
 const ordersModel = new OrdersModel(dbPool);
 const ordersController = new OrdersController(ordersModel);
 const ordersRouter = createOrdersRouter(ordersController);
 
-// ---------- API routes ----------
 app.use("/api/customers", customersRouter);
 app.use("/api/costumers", customersRouter);
 app.use("/api/dresses", dressesRouter);
 app.use("/api/orders", ordersRouter);
 
-// ---------- Static files ----------
 const publicPath = path.join(__dirname, "..");
-
-app.use("/images", express.static(path.join(publicPath, "client", "images")));
 app.use(express.static(publicPath));
 
 app.get("/", (req, res) => {
