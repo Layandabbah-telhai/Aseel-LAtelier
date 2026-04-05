@@ -94,36 +94,44 @@
 
         grid.innerHTML = dresses.map(d => {
           const images = Array.isArray(d.images) && d.images.length
-            ? d.images
-            : (d.image_url ? [{ image_url: d.image_url }] : []);
+            ? d.images.map(img => img.image_url).filter(Boolean)
+            : (d.image_url ? [d.image_url] : [FALLBACK_IMAGE]);
 
-          const mainImage = images[0]?.image_url || FALLBACK_IMAGE;
-          const thumbs = images.slice(1, 4).map(img => `
-            <img
-              src="${escapeHtml(img.image_url)}"
-              class="catalog-thumb"
-              alt="${escapeHtml(d.dress_name)}"
-              onerror="this.src='${FALLBACK_IMAGE}'"
-            >
-          `).join("");
+          const escapedImages = images.map(img => escapeHtml(img));
+          const imagesJson = escapeHtml(JSON.stringify(escapedImages));
 
           return `
             <div class="col-md-6 col-lg-4">
               <div class="card card-luxe h-100 overflow-hidden">
-                <img
-                  src="${escapeHtml(mainImage)}"
-                  class="catalog-img"
-                  alt="${escapeHtml(d.dress_name)}"
-                  onerror="this.src='${FALLBACK_IMAGE}'"
-                >
+                <div class="catalog-slider" data-images='${imagesJson}' data-index="0">
+                  <img
+                    src="${escapedImages[0] || FALLBACK_IMAGE}"
+                    class="catalog-img slider-main-image"
+                    alt="${escapeHtml(d.dress_name)}"
+                    onerror="this.src='${FALLBACK_IMAGE}'"
+                  >
 
-                ${thumbs ? `<div class="catalog-thumbs">${thumbs}</div>` : ""}
+                  ${escapedImages.length > 1 ? `
+                    <button type="button" class="slider-arrow slider-arrow-left" onclick="changeSlide(this, -1)">
+                      &#10094;
+                    </button>
+                    <button type="button" class="slider-arrow slider-arrow-right" onclick="changeSlide(this, 1)">
+                      &#10095;
+                    </button>
+                  ` : ""}
+
+                  <div class="slider-dots">
+                    ${escapedImages.map((_, index) => `
+                      <span class="slider-dot ${index === 0 ? "active" : ""}"></span>
+                    `).join("")}
+                  </div>
+                </div>
 
                 <div class="card-body">
                   <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
                     <h5 class="catalog-title mb-0">${escapeHtml(d.dress_name)}</h5>
                     <span class="badge-soft px-3 py-2 rounded-pill">
-                      ${images.length} image${images.length === 1 ? "" : "s"}
+                      ${escapedImages.length} image${escapedImages.length === 1 ? "" : "s"}
                     </span>
                   </div>
 
@@ -153,6 +161,30 @@
       }
     }
 
+    window.changeSlide = function (button, direction) {
+      const slider = button.closest(".catalog-slider");
+      if (!slider) return;
+
+      const imageEl = slider.querySelector(".slider-main-image");
+      const dots = slider.querySelectorAll(".slider-dot");
+      const images = JSON.parse(slider.dataset.images || "[]");
+
+      if (!images.length) return;
+
+      let index = Number(slider.dataset.index || 0);
+      index += direction;
+
+      if (index < 0) index = images.length - 1;
+      if (index >= images.length) index = 0;
+
+      slider.dataset.index = index;
+      imageEl.src = images[index] || FALLBACK_IMAGE;
+
+      dots.forEach((dot, i) => {
+        dot.classList.toggle("active", i === index);
+      });
+    };
+
     function formatPrice(value) {
       if (value === null || value === undefined || value === "") return "-";
       return Number(value).toFixed(2);
@@ -172,6 +204,7 @@
       return String(value ?? "")
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
