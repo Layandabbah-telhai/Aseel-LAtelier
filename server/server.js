@@ -42,6 +42,41 @@ app.get("/api/db-test", async (req, res) => {
   }
 });
 
+// ---------------- LOGIN ----------------
+app.post("/api/login", async (req, res) => {
+  try {
+    const { email, password } = req.body || {};
+
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
+    }
+
+    const [rows] = await dbPool.query(
+      `SELECT user_id, email, name, role
+       FROM users
+       WHERE email = ? AND password = ?
+       LIMIT 1`,
+      [String(email).trim(), String(password)]
+    );
+
+    if (!rows.length) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    const user = rows[0];
+
+    res.json({
+      message: "Login successful",
+      token: `aseel_user_${user.user_id}`,
+      user,
+    });
+  } catch (err) {
+    console.error("LOGIN ERROR:", err);
+    res.status(500).json({ message: "Server error", error: String(err) });
+  }
+});
+
+// ---------------- IMAGE UPLOAD ----------------
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
@@ -80,6 +115,7 @@ app.post("/api/upload-image", (req, res) => {
   });
 });
 
+// ---------------- ROUTERS ----------------
 const customersModel = new CostumersModel(dbPool);
 const customersController = new CostumersController(customersModel);
 const customersRouter = createCostumersRouter(customersController);
@@ -97,6 +133,7 @@ app.use("/api/costumers", customersRouter);
 app.use("/api/dresses", dressesRouter);
 app.use("/api/orders", ordersRouter);
 
+// ---------------- STATIC ----------------
 const publicPath = path.join(__dirname, "..");
 app.use(express.static(publicPath));
 
