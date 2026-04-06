@@ -10,5 +10,5 @@ function requireAuth() {
 function logout() {
     localStorage.removeItem("aseel_token");
     localStorage.removeItem("aseel_user");
-    window.location.href=LOGIN_PAGE;
+    window.location.href=APP_BASE;
 }
