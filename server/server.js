@@ -18,6 +18,10 @@ const OrdersModel = require("./orders/orders.model");
 const OrdersController = require("./orders/orders.controller");
 const createOrdersRouter = require("./orders/orders.routes");
 
+const AppointmentsModel = require("./appointments/appointments.model");
+const AppointmentsController = require("./appointments/appointments.controller");
+const createAppointmentsRouter = require("./appointments/appointments.routes");
+
 const app = express();
 
 app.use(cors());
@@ -128,10 +132,15 @@ const ordersModel = new OrdersModel(dbPool);
 const ordersController = new OrdersController(ordersModel);
 const ordersRouter = createOrdersRouter(ordersController);
 
+const appointmentsModel = new AppointmentsModel(dbPool);
+const appointmentsController = new AppointmentsController(appointmentsModel);
+const appointmentsRouter = createAppointmentsRouter(appointmentsController);
+
 app.use("/api/customers", customersRouter);
 app.use("/api/costumers", customersRouter);
 app.use("/api/dresses", dressesRouter);
 app.use("/api/orders", ordersRouter);
+app.use("/api/appointments", appointmentsRouter);
 
 // ---------------- STATIC ----------------
 const publicPath = path.join(__dirname, "..");
