@@ -18,9 +18,9 @@ const OrdersModel = require("./orders/orders.model");
 const OrdersController = require("./orders/orders.controller");
 const createOrdersRouter = require("./orders/orders.routes");
 
-const AppointmentsModel = require("./appointments/appointments/model");
-const AppointmentsController = require("./appointments/appointments/controller");
-const createAppointmentsRouter = require("./appointments/appointments/routes");
+const AppointmentsModel = require("./appointments/model");
+const AppointmentsController = require("./appointments/controller");
+const createAppointmentsRouter = require("./appointments/routes");
 
 const app = express();
 
@@ -29,6 +29,7 @@ app.use(express.json({ limit: "25mb" }));
 
 const dbPool = createPoolFromEnv();
 
+// ---------------- HEALTH ----------------
 app.get("/api/health", (req, res) => {
   res.json({ ok: true });
 });
