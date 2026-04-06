@@ -1,5 +1,4 @@
-CREATE DATABASE IF NOT EXISTS `wedding_dresses_db` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `wedding_dresses_db`;
+
 -- MySQL dump 10.13  Distrib 8.0.44, for Win64 (x86_64)
 --
 -- Host: localhost    Database: wedding_dresses_db
