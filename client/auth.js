@@ -1,4 +1,4 @@
-const APP_BASE="https://aseel-latelier-production.up.railway.app";
+const APP_BASE="https://layandabbah-telhai.github.io/Aseel-LAtelier/";
 const LOGIN_PAGE = `${APP_BASE}/client/login.html`;
 function requireAuth() {
     const token= localStorage.getItem("aseel_token");
