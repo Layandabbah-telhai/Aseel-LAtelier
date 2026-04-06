@@ -27,7 +27,7 @@
                 <div class="brand">Aseel L'Atelier</div>
                 <h1 class="hero-title">Customers</h1>
                 <p class="hero-sub">
-                  Manage bridal clients, contact details, and event dates.
+                  Manage bridal clients, contact details, city, and personal details.
                 </p>
               </div>
             </div>
@@ -46,7 +46,7 @@
       <div class="card-body">
         <div class="row g-3 align-items-end">
           <div class="col-lg-6">
-            <label class="label-soft">Search (name / phone / email)</label>
+            <label class="label-soft">Search (name / city / phone / email)</label>
             <input id="searchInput" class="form-control" placeholder="Search..." />
           </div>
 
@@ -71,14 +71,19 @@
         <form id="customerForm" class="row g-3">
           <input type="hidden" id="customer_id" />
 
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label class="label-soft">First Name *</label>
             <input id="first_name" class="form-control" required />
           </div>
 
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label class="label-soft">Last Name *</label>
             <input id="last_name" class="form-control" required />
+          </div>
+
+          <div class="col-md-4">
+            <label class="label-soft">City</label>
+            <input id="city" class="form-control" />
           </div>
 
           <div class="col-md-4">
@@ -92,6 +97,11 @@
           </div>
 
           <div class="col-md-4">
+            <label class="label-soft">Birth Date</label>
+            <input id="birth_date" type="date" class="form-control" />
+          </div>
+
+          <div class="col-md-12">
             <label class="label-soft">Email</label>
             <input id="email" type="email" class="form-control" />
           </div>
@@ -119,8 +129,10 @@
             <tr>
               <th>#</th>
               <th>Name</th>
+              <th>City</th>
               <th>Phone</th>
               <th>Event Date</th>
+              <th>Birth Date</th>
               <th>Email</th>
               <th style="width:180px;">Actions</th>
             </tr>

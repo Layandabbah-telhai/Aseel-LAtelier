@@ -11,6 +11,7 @@ function normalizeOrderInput(body) {
     customer_id: Number(body?.customer_id),
     dress_id: Number(body?.dress_id),
     order_type: String(body?.order_type || "").trim().toLowerCase(),
+    occasion_type: String(body?.occasion_type || "").trim(),
     order_date: String(body?.order_date || "").trim(),
     return_date: body?.return_date ? String(body.return_date).trim() : null,
     total_price:
@@ -39,6 +40,9 @@ function validateOrderInput(data) {
   }
   if (!ALLOWED_ORDER_STATUS.includes(data.status)) {
     return "invalid order status";
+  }
+  if (data.occasion_type.length > 100) {
+    return "occasion_type too long";
   }
   return null;
 }

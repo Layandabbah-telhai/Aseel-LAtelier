@@ -18,9 +18,10 @@ class OrdersModel {
         c.last_name LIKE ? OR
         c.phone LIKE ? OR
         d.dress_name LIKE ? OR
-        o.order_type LIKE ?
+        o.order_type LIKE ? OR
+        o.occasion_type LIKE ?
       )`);
-      params.push(like, like, like, like, like);
+      params.push(like, like, like, like, like, like);
     }
 
     if (status.trim()) {
@@ -37,6 +38,7 @@ class OrdersModel {
         o.customer_id,
         o.dress_id,
         o.order_type,
+        o.occasion_type,
         o.order_date,
         o.return_date,
         o.total_price,
@@ -56,6 +58,7 @@ class OrdersModel {
         o.customer_id,
         o.dress_id,
         o.order_type,
+        o.occasion_type,
         o.order_date,
         o.return_date,
         o.total_price,
@@ -91,6 +94,7 @@ class OrdersModel {
         o.customer_id,
         o.dress_id,
         o.order_type,
+        o.occasion_type,
         o.order_date,
         o.return_date,
         o.total_price,
@@ -104,6 +108,7 @@ class OrdersModel {
         o.customer_id,
         o.dress_id,
         o.order_type,
+        o.occasion_type,
         o.order_date,
         o.return_date,
         o.total_price,
@@ -132,6 +137,7 @@ class OrdersModel {
     customer_id,
     dress_id,
     order_type,
+    occasion_type,
     order_date,
     return_date,
     total_price,
@@ -140,13 +146,14 @@ class OrdersModel {
     const [result] = await this.db.query(
       `
       INSERT INTO \`${this.ordersTable}\`
-      (customer_id, dress_id, order_type, order_date, return_date, total_price, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      (customer_id, dress_id, order_type, occasion_type, order_date, return_date, total_price, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         customer_id,
         dress_id,
         order_type,
+        occasion_type || null,
         order_date,
         return_date || null,
         total_price,
@@ -163,6 +170,7 @@ class OrdersModel {
       customer_id,
       dress_id,
       order_type,
+      occasion_type,
       order_date,
       return_date,
       total_price,
@@ -176,6 +184,7 @@ class OrdersModel {
         customer_id = ?,
         dress_id = ?,
         order_type = ?,
+        occasion_type = ?,
         order_date = ?,
         return_date = ?,
         total_price = ?,
@@ -186,6 +195,7 @@ class OrdersModel {
         customer_id,
         dress_id,
         order_type,
+        occasion_type || null,
         order_date,
         return_date || null,
         total_price,

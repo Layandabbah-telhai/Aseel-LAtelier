@@ -18,6 +18,7 @@ const orderId = document.getElementById("order_id");
 const customerId = document.getElementById("customer_id");
 const dressId = document.getElementById("dress_id");
 const orderType = document.getElementById("order_type");
+const occasionType = document.getElementById("occasion_type");
 const orderDate = document.getElementById("order_date");
 const returnDate = document.getElementById("return_date");
 const returnDateWrap = document.getElementById("returnDateWrap");
@@ -155,7 +156,7 @@ async function loadOrders() {
   } catch (error) {
     ordersTbody.innerHTML = `
       <tr>
-        <td colspan="13" class="text-center text-danger">
+        <td colspan="14" class="text-center text-danger">
           ${error.message}
         </td>
       </tr>
@@ -170,7 +171,7 @@ function renderOrders(orders) {
   if (!orders.length) {
     ordersTbody.innerHTML = `
       <tr>
-        <td colspan="13" class="text-center text-muted">
+        <td colspan="14" class="text-center text-muted">
           No orders found
         </td>
       </tr>
@@ -189,6 +190,7 @@ function renderOrders(orders) {
           <td>${escapeHtml(o.phone)}</td>
           <td>${escapeHtml(o.dress_name)}</td>
           <td>${escapeHtml(o.order_type)}</td>
+          <td>${escapeHtml(o.occasion_type || "")}</td>
           <td>${formatDate(o.order_date)}</td>
           <td>${formatDate(o.return_date)}</td>
           <td>${formatMoney(o.total_price)}</td>
@@ -222,6 +224,7 @@ window.editOrder = async function (id) {
   customerId.value = o.customer_id;
   dressId.value = o.dress_id;
   orderType.value = o.order_type;
+  occasionType.value = o.occasion_type || "";
   orderDate.value = o.order_date ? o.order_date.slice(0, 10) : "";
   returnDate.value = o.return_date ? o.return_date.slice(0, 10) : "";
   totalPrice.value = o.total_price ?? "";
@@ -336,6 +339,7 @@ orderForm.addEventListener("submit", async (e) => {
     customer_id: customerId.value,
     dress_id: dressId.value,
     order_type: orderType.value,
+    occasion_type: occasionType.value.trim(),
     order_date: orderDate.value,
     return_date: returnDate.value,
     total_price: totalPrice.value,
@@ -403,6 +407,7 @@ function clearOrderForm() {
   orderForm.reset();
   statusField.value = "in_progress";
   orderType.value = "sale";
+  occasionType.value = "";
   updateReturnVisibility();
   updatePriceFromDress();
 }

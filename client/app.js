@@ -14,15 +14,16 @@ const customersCount = document.getElementById("customersCount");
 const idField = document.getElementById("customer_id");
 const firstName = document.getElementById("first_name");
 const lastName = document.getElementById("last_name");
+const city = document.getElementById("city");
 const phone = document.getElementById("phone");
 const eventDate = document.getElementById("event_date");
+const birthDate = document.getElementById("birth_date");
 const email = document.getElementById("email");
 
 // Show endpoint text
 const apiText = document.getElementById("apiUrlText");
 if (apiText) apiText.textContent = ENDPOINT;
 
-// ---------------- LOAD CUSTOMERS ----------------
 async function loadCustomers(search = "") {
   try {
     let url = ENDPOINT;
@@ -40,7 +41,7 @@ async function loadCustomers(search = "") {
   } catch (error) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="text-center text-danger">
+        <td colspan="8" class="text-center text-danger">
           ${error.message}
         </td>
       </tr>
@@ -49,14 +50,13 @@ async function loadCustomers(search = "") {
   }
 }
 
-// ---------------- RENDER TABLE ----------------
 function renderCustomers(customers) {
   customersCount.textContent = `${customers.length} customers`;
 
   if (!customers.length) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="text-center text-muted">
+        <td colspan="8" class="text-center text-muted">
           No customers found
         </td>
       </tr>
@@ -68,8 +68,10 @@ function renderCustomers(customers) {
     <tr>
       <td>${c.customer_id}</td>
       <td>${escapeHtml(c.first_name)} ${escapeHtml(c.last_name)}</td>
+      <td>${escapeHtml(c.city || "")}</td>
       <td>${escapeHtml(c.phone)}</td>
       <td>${formatDate(c.event_date)}</td>
+      <td>${formatDate(c.birth_date)}</td>
       <td>${escapeHtml(c.email || "")}</td>
       <td>
         <button class="btn btn-sm btn-outline-primary" onclick="editCustomer(${c.customer_id})">
@@ -83,7 +85,6 @@ function renderCustomers(customers) {
   `).join("");
 }
 
-// ---------------- HELPERS ----------------
 function formatDate(date) {
   if (!date) return "";
   const d = new Date(date);
@@ -91,7 +92,7 @@ function formatDate(date) {
 }
 
 function escapeHtml(value) {
-  return String(value)
+  return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -99,15 +100,16 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-// ---------------- ADD / UPDATE ----------------
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const data = {
     first_name: firstName.value.trim(),
     last_name: lastName.value.trim(),
+    city: city.value.trim(),
     phone: phone.value.trim(),
     event_date: eventDate.value,
+    birth_date: birthDate.value,
     email: email.value.trim()
   };
 
@@ -131,7 +133,6 @@ form.addEventListener("submit", async (e) => {
   loadCustomers(searchInput.value);
 });
 
-// ---------------- EDIT ----------------
 window.editCustomer = async function (id) {
   const res = await fetch(`${ENDPOINT}/${id}`);
   if (!res.ok) {
@@ -142,14 +143,15 @@ window.editCustomer = async function (id) {
   const c = await res.json();
 
   idField.value = c.customer_id;
-  firstName.value = c.first_name;
-  lastName.value = c.last_name;
-  phone.value = c.phone;
+  firstName.value = c.first_name || "";
+  lastName.value = c.last_name || "";
+  city.value = c.city || "";
+  phone.value = c.phone || "";
   eventDate.value = c.event_date ? c.event_date.slice(0, 10) : "";
+  birthDate.value = c.birth_date ? c.birth_date.slice(0, 10) : "";
   email.value = c.email || "";
 };
 
-// ---------------- DELETE ----------------
 window.deleteCustomer = async function (id) {
   if (!confirm("Delete this customer?")) return;
 
@@ -165,27 +167,22 @@ window.deleteCustomer = async function (id) {
   loadCustomers(searchInput.value);
 };
 
-// ---------------- CLEAR FORM ----------------
 function clearForm() {
   idField.value = "";
   form.reset();
 }
 
-// ---------------- SEARCH ----------------
 searchBtn.addEventListener("click", () => {
   loadCustomers(searchInput.value.trim());
 });
 
-// ---------------- RESET ----------------
 resetBtn.addEventListener("click", () => {
   searchInput.value = "";
   loadCustomers();
 });
 
-// ---------------- CANCEL EDIT ----------------
 cancelEditBtn.addEventListener("click", () => {
   clearForm();
 });
 
-// ---------------- INITIAL LOAD ----------------
 loadCustomers();

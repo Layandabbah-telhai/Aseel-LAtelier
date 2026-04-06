@@ -2,8 +2,10 @@ function normalizeInput(body) {
   return {
     first_name: String(body?.first_name || "").trim(),
     last_name: String(body?.last_name || "").trim(),
+    city: String(body?.city || "").trim(),
     phone: String(body?.phone || "").trim(),
     event_date: body?.event_date ? String(body.event_date) : null,
+    birth_date: body?.birth_date ? String(body.birth_date) : null,
     email: body?.email ? String(body.email).trim() : null,
   };
 }
@@ -15,6 +17,7 @@ function validate(data) {
 
   if (data.first_name.length > 50) return "first_name too long";
   if (data.last_name.length > 50) return "last_name too long";
+  if (data.city.length > 100) return "city too long";
   if (data.phone.length > 20) return "phone too long";
   if (data.email && data.email.length > 100) return "email too long";
 

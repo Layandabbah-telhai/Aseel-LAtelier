@@ -9,7 +9,7 @@ class CustomersModel {
 
     if (!s) {
       const [rows] = await this.db.query(
-        `SELECT customer_id, first_name, last_name, phone, event_date, email
+        `SELECT customer_id, first_name, last_name, city, phone, event_date, birth_date, email
          FROM \`${this.table}\`
          ORDER BY customer_id DESC
          LIMIT 200`
@@ -19,19 +19,24 @@ class CustomersModel {
 
     const like = `%${s}%`;
     const [rows] = await this.db.query(
-      `SELECT customer_id, first_name, last_name, phone, event_date, email
+      `SELECT customer_id, first_name, last_name, city, phone, event_date, birth_date, email
        FROM \`${this.table}\`
-       WHERE phone LIKE ? OR first_name LIKE ? OR last_name LIKE ? OR email LIKE ?
+       WHERE phone LIKE ?
+          OR first_name LIKE ?
+          OR last_name LIKE ?
+          OR city LIKE ?
+          OR email LIKE ?
        ORDER BY customer_id DESC
        LIMIT 200`,
-      [like, like, like, like]
+      [like, like, like, like, like]
     );
+
     return rows;
   }
 
   async getById(customer_id) {
     const [rows] = await this.db.query(
-      `SELECT customer_id, first_name, last_name, phone, event_date, email
+      `SELECT customer_id, first_name, last_name, city, phone, event_date, birth_date, email
        FROM \`${this.table}\`
        WHERE customer_id = ?`,
       [customer_id]
@@ -39,23 +44,65 @@ class CustomersModel {
     return rows[0] || null;
   }
 
-  async create({ first_name, last_name, phone, event_date, email }) {
+  async create({
+    first_name,
+    last_name,
+    city,
+    phone,
+    event_date,
+    birth_date,
+    email,
+  }) {
     const [result] = await this.db.query(
       `INSERT INTO \`${this.table}\`
-       (first_name, last_name, phone, event_date, email)
-       VALUES (?, ?, ?, ?, ?)`,
-      [first_name, last_name, phone, event_date ?? null, email ?? null]
+       (first_name, last_name, city, phone, event_date, birth_date, email)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        first_name,
+        last_name,
+        city || null,
+        phone,
+        event_date ?? null,
+        birth_date ?? null,
+        email ?? null,
+      ]
     );
 
     return this.getById(result.insertId);
   }
 
-  async update(customer_id, { first_name, last_name, phone, event_date, email }) {
+  async update(
+    customer_id,
+    {
+      first_name,
+      last_name,
+      city,
+      phone,
+      event_date,
+      birth_date,
+      email,
+    }
+  ) {
     await this.db.query(
       `UPDATE \`${this.table}\`
-       SET first_name = ?, last_name = ?, phone = ?, event_date = ?, email = ?
+       SET first_name = ?,
+           last_name = ?,
+           city = ?,
+           phone = ?,
+           event_date = ?,
+           birth_date = ?,
+           email = ?
        WHERE customer_id = ?`,
-      [first_name, last_name, phone, event_date ?? null, email ?? null, customer_id]
+      [
+        first_name,
+        last_name,
+        city || null,
+        phone,
+        event_date ?? null,
+        birth_date ?? null,
+        email ?? null,
+        customer_id,
+      ]
     );
 
     return this.getById(customer_id);
