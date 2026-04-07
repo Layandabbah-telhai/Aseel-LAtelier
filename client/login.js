@@ -1,4 +1,4 @@
-const API_BASE = "https://aseel-latelier.onrender.com/api";
+const API_BASE = CONFIG.API_BASE;
 const APP_BASE = "https://layandabbah-telhai.github.io/Aseel-LAtelier";
 
 async function login() {
