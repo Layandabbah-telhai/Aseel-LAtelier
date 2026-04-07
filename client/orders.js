@@ -1,4 +1,4 @@
-const API_BASE = "/api";
+const API_BASE = "https://aseel-latelier.onrender.com/api";
 const ENDPOINT = `${API_BASE}/orders`;
 const CUSTOMERS_ENDPOINT = `${API_BASE}/customers`;
 const DRESSES_ENDPOINT = `${API_BASE}/dresses`;
@@ -201,8 +201,8 @@ function renderOrders(orders) {
           <td>
             <button class="btn btn-sm btn-outline-primary" onclick="editOrder(${o.order_id})">Edit</button>
             <button class="btn btn-sm btn-outline-secondary" onclick="openPayments(${o.order_id}, '${escapeHtml(
-              o.first_name
-            )} ${escapeHtml(o.last_name)}', '${escapeHtml(o.dress_name)}')">Payments</button>
+        o.first_name
+      )} ${escapeHtml(o.last_name)}', '${escapeHtml(o.dress_name)}')">Payments</button>
             <button class="btn btn-sm btn-outline-danger" onclick="deleteOrder(${o.order_id})">Delete</button>
           </td>
         </tr>
