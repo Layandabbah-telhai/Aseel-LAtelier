@@ -1,5 +1,5 @@
-const API_BASE = "https://aseel-latelier-production.up.railway.app/api";
-const APP_BASE = "https://layandabbah-telhai.github.io/Aseel-LAtelier";
+const API_BASE = "/api";
+const APP_BASE = "https://aseel-latelier.onrender.com/";
 
 async function login() {
   const email = document.getElementById("email").value.trim();

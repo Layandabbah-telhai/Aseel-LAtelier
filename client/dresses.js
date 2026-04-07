@@ -1,4 +1,4 @@
-const API_BASE = "https://aseel-latelier-production.up.railway.app/api";
+const API_BASE = "/api";
 const ENDPOINT = `${API_BASE}/dresses`;
 const UPLOAD_ENDPOINT = `${API_BASE}/upload-image`;
 const FALLBACK_IMAGE = "./logo.png";
