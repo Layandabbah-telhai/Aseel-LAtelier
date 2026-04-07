@@ -50,14 +50,10 @@ function formatNumber(value) {
 }
 
 function getCustomerName(order) {
-  return `${escapeHtml(order.first_name || "")} ${escapeHtml(order.last_name || "")}`.trim();
-}
-
-function normalizeRows(payload) {
-  if (Array.isArray(payload)) return payload;
-  if (payload && Array.isArray(payload.rows)) return payload.rows;
-  if (payload && typeof payload === "object" && payload.measurement_id) return [payload];
-  return [];
+  if (order.first_name || order.last_name) {
+    return `${escapeHtml(order.first_name || "")} ${escapeHtml(order.last_name || "")}`.trim();
+  }
+  return escapeHtml(order.customer_name || "");
 }
 
 function renderCustomerOptions() {
@@ -70,7 +66,6 @@ function renderCustomerOptions() {
 
 function renderOrderOptions() {
   const selectedCustomerId = customerId.value;
-  const previousOrderValue = orderId.value;
 
   const filteredOrders = selectedCustomerId
     ? ordersCache.filter((o) => String(o.customer_id) === String(selectedCustomerId))
@@ -84,11 +79,6 @@ function renderOrderOptions() {
 
   if (urlOrderId) {
     orderId.value = urlOrderId;
-    return;
-  }
-
-  if (filteredOrders.some((o) => String(o.order_id) === String(previousOrderValue))) {
-    orderId.value = previousOrderValue;
   }
 }
 
@@ -134,24 +124,32 @@ async function loadSummary() {
 
   orderSummary.innerHTML = `
     <div><strong>All Measurements</strong></div>
-    <div>You can add measurements for any order, or open this page from an order to focus on one order only.</div>
+    <div>Select any order in the form to add a measurement, or open this page from an order to focus on one order only.</div>
   `;
+}
+
+async function loadMeasurementsForOrder(orderIdValue) {
+  const res = await fetch(`${MEASUREMENTS_ENDPOINT}?order_id=${encodeURIComponent(orderIdValue)}`);
+  if (!res.ok) {
+    throw new Error(`Failed to load measurements (${res.status})`);
+  }
+
+  const rows = await res.json();
+  return Array.isArray(rows) ? rows : [];
 }
 
 async function loadMeasurements() {
   try {
-    let url = MEASUREMENTS_ENDPOINT;
+    let rows = [];
+
     if (urlOrderId) {
-      url += `?order_id=${encodeURIComponent(urlOrderId)}`;
+      rows = await loadMeasurementsForOrder(urlOrderId);
+    } else {
+      const allMeasurements = await Promise.all(
+        ordersCache.map((order) => loadMeasurementsForOrder(order.order_id))
+      );
+      rows = allMeasurements.flat();
     }
-
-    const res = await fetch(url);
-    if (!res.ok) {
-      throw new Error(`Failed to load measurements (${res.status})`);
-    }
-
-    const payload = await res.json();
-    const rows = normalizeRows(payload);
 
     renderMeasurements(rows);
   } catch (error) {
