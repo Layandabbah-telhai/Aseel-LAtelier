@@ -53,6 +53,13 @@ function getCustomerName(order) {
   return `${escapeHtml(order.first_name || "")} ${escapeHtml(order.last_name || "")}`.trim();
 }
 
+function normalizeRows(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (payload && Array.isArray(payload.rows)) return payload.rows;
+  if (payload && typeof payload === "object" && payload.measurement_id) return [payload];
+  return [];
+}
+
 function renderCustomerOptions() {
   customerId.innerHTML = customersCache.map((c) => `
     <option value="${c.customer_id}">
@@ -63,6 +70,7 @@ function renderCustomerOptions() {
 
 function renderOrderOptions() {
   const selectedCustomerId = customerId.value;
+  const previousOrderValue = orderId.value;
 
   const filteredOrders = selectedCustomerId
     ? ordersCache.filter((o) => String(o.customer_id) === String(selectedCustomerId))
@@ -76,6 +84,11 @@ function renderOrderOptions() {
 
   if (urlOrderId) {
     orderId.value = urlOrderId;
+    return;
+  }
+
+  if (filteredOrders.some((o) => String(o.order_id) === String(previousOrderValue))) {
+    orderId.value = previousOrderValue;
   }
 }
 
@@ -137,7 +150,9 @@ async function loadMeasurements() {
       throw new Error(`Failed to load measurements (${res.status})`);
     }
 
-    const rows = await res.json();
+    const payload = await res.json();
+    const rows = normalizeRows(payload);
+
     renderMeasurements(rows);
   } catch (error) {
     tbody.innerHTML = `
@@ -165,7 +180,7 @@ function renderMeasurements(rows) {
     <tr>
       <td>${m.measurement_id}</td>
       <td><a href="measurements.html?order_id=${m.order_id}">#${m.order_id}</a></td>
-      <td>${escapeHtml(m.first_name)} ${escapeHtml(m.last_name)}</td>
+      <td>${escapeHtml(m.first_name || "")} ${escapeHtml(m.last_name || "")}</td>
       <td>${escapeHtml(m.dress_name || "")}</td>
       <td>${escapeHtml(m.occasion_type || "")}</td>
       <td>${escapeHtml(m.tailoring_type || "")}</td>
