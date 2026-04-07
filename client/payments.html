@@ -28,7 +28,7 @@
                 <div class="brand">Aseel L'Atelier</div>
                 <h1 class="hero-title">Payments</h1>
                 <p class="hero-sub">
-                  Manage payments for a selected order.
+                  Manage payments for all orders or for one selected order.
                 </p>
               </div>
             </div>
@@ -39,6 +39,7 @@
             <a class="btn btn-outline-secondary btn-soft" href="https://layandabbah-telhai.github.io/Aseel-LAtelier/client/dresses.html">Dresses</a>
             <a class="btn btn-outline-secondary btn-soft" href="https://layandabbah-telhai.github.io/Aseel-LAtelier/client/orders.html">Orders</a>
             <a class="btn btn-outline-secondary btn-soft" href="https://layandabbah-telhai.github.io/Aseel-LAtelier/client/appointments.html">Appointments</a>
+            <a class="btn btn-outline-secondary btn-soft" href="https://layandabbah-telhai.github.io/Aseel-LAtelier/client/payments.html">Payments</a>
             <button class="btn btn-outline-danger btn-soft" onclick="logout()">Logout</button>
           </div>
         </div>
@@ -48,7 +49,7 @@
     <div class="card card-luxe mb-4">
       <div class="card-body">
         <div class="small-muted">
-          API: <span id="apiUrlText">/api/orders/:id/payments</span>
+          API: <span id="apiUrlText">/api/orders/payments</span>
         </div>
         <div class="mt-3" id="orderSummary"></div>
       </div>
@@ -58,19 +59,29 @@
       <div class="card-header">Add Payment</div>
       <div class="card-body">
         <form id="paymentForm" class="row g-3">
-          <div class="col-md-4">
+          <div class="col-md-6">
+            <label class="label-soft">Order *</label>
+            <select id="selected_order_id" class="form-select" required></select>
+          </div>
+
+          <div class="col-md-3">
             <label class="label-soft">Payment Date</label>
             <input id="payment_date" type="date" class="form-control" />
           </div>
 
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label class="label-soft">Amount</label>
             <input id="amount" type="number" step="0.01" class="form-control" />
           </div>
 
           <div class="col-md-4">
-            <label class="label-soft">Method</label>
-            <input id="payment_method" class="form-control" />
+            <label class="label-soft">Payment Method</label>
+            <select id="payment_method" class="form-select">
+              <option value="Cash">Cash</option>
+              <option value="Credit Card">Credit Card</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+              <option value="Bit">Bit</option>
+            </select>
           </div>
 
           <div class="col-md-4">
@@ -116,6 +127,8 @@
           <thead>
             <tr>
               <th>#</th>
+              <th>Order</th>
+              <th>Customer</th>
               <th>Date</th>
               <th>Amount</th>
               <th>Method</th>

@@ -7,6 +7,7 @@ const paymentsSummary = document.getElementById("paymentsSummary");
 const paymentsTbody = document.getElementById("paymentsTbody");
 
 const paymentForm = document.getElementById("paymentForm");
+const selectedOrderField = document.getElementById("selected_order_id");
 const paymentDate = document.getElementById("payment_date");
 const amount = document.getElementById("amount");
 const paymentMethod = document.getElementById("payment_method");
@@ -16,14 +17,15 @@ const paymentStatus = document.getElementById("payment_status");
 const paymentNotes = document.getElementById("payment_notes");
 
 const params = new URLSearchParams(window.location.search);
-const selectedOrderId = params.get("order_id");
+const urlOrderId = params.get("order_id");
 
-if (!selectedOrderId) {
-  alert("No order selected");
-  window.location.href = "orders.html";
+let ordersCache = [];
+
+if (apiText) {
+  apiText.textContent = urlOrderId
+    ? `${ORDERS_ENDPOINT}/${urlOrderId}/payments`
+    : `${ORDERS_ENDPOINT}/.../payments`;
 }
-
-if (apiText) apiText.textContent = `${ORDERS_ENDPOINT}/${selectedOrderId}/payments`;
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -59,48 +61,113 @@ function renderPaymentStatus(status) {
   return `<span class="rounded-pill px-3 py-2 d-inline-block" style="${style}">${escapeHtml(status)}</span>`;
 }
 
-async function loadOrderSummary() {
-  const res = await fetch(`${ORDERS_ENDPOINT}/${selectedOrderId}`);
+function getCustomerName(order) {
+  if (order.first_name || order.last_name) {
+    return `${escapeHtml(order.first_name || "")} ${escapeHtml(order.last_name || "")}`.trim();
+  }
+  return escapeHtml(order.customer_name || "");
+}
+
+function renderOrderOptions() {
+  selectedOrderField.innerHTML = ordersCache.map((order) => `
+    <option value="${order.order_id}">
+      #${order.order_id} - ${getCustomerName(order)} - ${escapeHtml(order.dress_name || "")}
+    </option>
+  `).join("");
+
+  if (urlOrderId) {
+    selectedOrderField.value = urlOrderId;
+  }
+}
+
+async function loadOrders() {
+  const res = await fetch(ORDERS_ENDPOINT);
   if (!res.ok) {
-    orderSummary.innerHTML = `<div class="text-danger">Failed to load order.</div>`;
+    throw new Error("Failed to load orders");
+  }
+
+  ordersCache = await res.json();
+  renderOrderOptions();
+}
+
+async function loadOrderSummary() {
+  if (urlOrderId) {
+    const res = await fetch(`${ORDERS_ENDPOINT}/${urlOrderId}`);
+    if (!res.ok) {
+      orderSummary.innerHTML = `<div class="text-danger">Failed to load order.</div>`;
+      return;
+    }
+
+    const order = await res.json();
+
+    orderSummary.innerHTML = `
+      <div><strong>Selected Order #${order.order_id}</strong></div>
+      <div>Customer: ${getCustomerName(order)}</div>
+      <div>Dress: ${escapeHtml(order.dress_name || "")}</div>
+      <div>Total Price: ${formatMoney(order.total_price)}</div>
+    `;
     return;
   }
 
-  const order = await res.json();
-
-  const customerName =
-    order.first_name || order.last_name
-      ? `${escapeHtml(order.first_name || "")} ${escapeHtml(order.last_name || "")}`.trim()
-      : escapeHtml(order.customer_name || "");
-
   orderSummary.innerHTML = `
-    <div><strong>Order #${order.order_id}</strong></div>
-    <div>Customer: ${customerName}</div>
-    <div>Dress: ${escapeHtml(order.dress_name || "")}</div>
-    <div>Total Price: ${formatMoney(order.total_price)}</div>
+    <div><strong>All Payments</strong></div>
+    <div>Select any order in the form to add a payment, or open this page from an order to focus on one order only.</div>
   `;
+}
+
+async function loadPaymentsForOrder(orderId) {
+  const res = await fetch(`${ORDERS_ENDPOINT}/${orderId}/payments`);
+  if (!res.ok) {
+    throw new Error(`Failed to load payments (${res.status})`);
+  }
+
+  const payments = await res.json();
+  return payments.map((payment) => ({
+    ...payment,
+    order_id: orderId
+  }));
 }
 
 async function loadPayments() {
   try {
-    const res = await fetch(`${ORDERS_ENDPOINT}/${selectedOrderId}/payments`);
-    if (!res.ok) throw new Error(`Failed to load payments (${res.status})`);
+    let payments = [];
 
-    const payments = await res.json();
-    paymentsSummary.textContent = `${payments.length} payments`;
+    if (urlOrderId) {
+      payments = await loadPaymentsForOrder(urlOrderId);
+    } else {
+      const allPayments = await Promise.all(
+        ordersCache.map((order) => loadPaymentsForOrder(order.order_id))
+      );
+      payments = allPayments.flat();
+    }
 
-    if (!payments.length) {
+    const paymentsWithOrderInfo = payments.map((payment) => {
+      const order = ordersCache.find((o) => String(o.order_id) === String(payment.order_id)) || {};
+      return {
+        ...payment,
+        customer_name: getCustomerName(order),
+        dress_name: order.dress_name || ""
+      };
+    });
+
+    paymentsSummary.textContent = `${paymentsWithOrderInfo.length} payments`;
+
+    if (!paymentsWithOrderInfo.length) {
       paymentsTbody.innerHTML = `
         <tr>
-          <td colspan="9" class="text-center text-muted">No payments found</td>
+          <td colspan="11" class="text-center text-muted">No payments found</td>
         </tr>
       `;
       return;
     }
 
-    paymentsTbody.innerHTML = payments.map((p) => `
+    paymentsTbody.innerHTML = paymentsWithOrderInfo.map((p) => `
       <tr>
         <td>${p.payment_id}</td>
+        <td>
+          <a href="payments.html?order_id=${p.order_id}">#${p.order_id}</a>
+        </td>
+        <td>${escapeHtml(p.customer_name || "")}</td>
         <td>${formatDate(p.payment_date)}</td>
         <td>${formatMoney(p.amount)}</td>
         <td>${escapeHtml(p.payment_method || "")}</td>
@@ -109,7 +176,7 @@ async function loadPayments() {
         <td>${renderPaymentStatus(p.payment_status || "Paid")}</td>
         <td>${escapeHtml(p.notes || "")}</td>
         <td>
-          <button class="btn btn-sm btn-outline-danger" onclick="deletePayment(${p.payment_id})">
+          <button class="btn btn-sm btn-outline-danger" onclick="deletePayment(${p.payment_id}, ${p.order_id})">
             Delete
           </button>
         </td>
@@ -118,13 +185,13 @@ async function loadPayments() {
   } catch (error) {
     paymentsTbody.innerHTML = `
       <tr>
-        <td colspan="9" class="text-center text-danger">${error.message}</td>
+        <td colspan="11" class="text-center text-danger">${error.message}</td>
       </tr>
     `;
   }
 }
 
-window.deletePayment = async function (paymentId) {
+window.deletePayment = async function (paymentId, orderId) {
   if (!confirm("Delete this payment?")) return;
 
   const res = await fetch(`${ORDERS_ENDPOINT}/payments/${paymentId}`, {
@@ -137,11 +204,21 @@ window.deletePayment = async function (paymentId) {
   }
 
   await loadPayments();
-  await loadOrderSummary();
+
+  if (urlOrderId && String(urlOrderId) === String(orderId)) {
+    await loadOrderSummary();
+  }
 };
 
 paymentForm.addEventListener("submit", async (e) => {
   e.preventDefault();
+
+  const selectedOrderId = selectedOrderField.value;
+
+  if (!selectedOrderId) {
+    alert("Please select an order");
+    return;
+  }
 
   const data = {
     payment_date: paymentDate.value,
@@ -167,12 +244,16 @@ paymentForm.addEventListener("submit", async (e) => {
 
   paymentForm.reset();
   paymentDate.value = new Date().toISOString().slice(0, 10);
+  paymentMethod.value = "Cash";
   await loadPayments();
   await loadOrderSummary();
 });
 
 (async function init() {
   paymentDate.value = new Date().toISOString().slice(0, 10);
+  paymentMethod.value = "Cash";
+
+  await loadOrders();
   await loadOrderSummary();
   await loadPayments();
 })();
