@@ -38,6 +38,7 @@
             <a class="btn btn-outline-secondary btn-soft" href="https://layandabbah-telhai.github.io/Aseel-LAtelier/client/customers.html">Customers</a>
             <a class="btn btn-outline-secondary btn-soft" href="https://layandabbah-telhai.github.io/Aseel-LAtelier/client/dresses.html">Dresses</a>
             <a class="btn btn-outline-secondary btn-soft" href="https://layandabbah-telhai.github.io/Aseel-LAtelier/client/appointments.html">Appointments</a>
+            <a class="btn btn-outline-secondary btn-soft" href="https://layandabbah-telhai.github.io/Aseel-LAtelier/client/payments.html">Payments</a>
             <button class="btn btn-outline-danger btn-soft" onclick="logout()">Logout</button>
           </div>
         </div>
@@ -171,80 +172,6 @@
           </thead>
           <tbody id="ordersTbody"></tbody>
         </table>
-      </div>
-    </div>
-
-    <div class="card card-luxe" id="paymentsCard" style="display:none;">
-      <div class="card-header d-flex align-items-center justify-content-between">
-        <span id="paymentsTitle">Payments</span>
-        <span class="badge-soft px-3 py-2 rounded-pill" id="paymentsSummary">0 payments</span>
-      </div>
-
-      <div class="card-body">
-        <form id="paymentForm" class="row g-3 mb-4">
-          <div class="col-md-4">
-            <label class="label-soft">Payment Date</label>
-            <input id="payment_date" type="date" class="form-control" />
-          </div>
-
-          <div class="col-md-4">
-            <label class="label-soft">Amount</label>
-            <input id="amount" type="number" step="0.01" class="form-control" />
-          </div>
-
-          <div class="col-md-4">
-            <label class="label-soft">Method</label>
-            <input id="payment_method" class="form-control" />
-          </div>
-
-          <div class="col-md-4">
-            <label class="label-soft">Due Date</label>
-            <input id="due_date" type="date" class="form-control" />
-          </div>
-
-          <div class="col-md-4">
-            <label class="label-soft">Reference Number</label>
-            <input id="reference_number" class="form-control" />
-          </div>
-
-          <div class="col-md-4">
-            <label class="label-soft">Payment Status</label>
-            <select id="payment_status" class="form-select">
-              <option value="Paid">Paid</option>
-              <option value="Partial">Partial</option>
-              <option value="Pending">Pending</option>
-              <option value="Unpaid">Unpaid</option>
-            </select>
-          </div>
-
-          <div class="col-12">
-            <label class="label-soft">Notes</label>
-            <input id="payment_notes" class="form-control" />
-          </div>
-
-          <div class="col-12 d-grid">
-            <button type="submit" class="btn btn-primary">Add Payment</button>
-          </div>
-        </form>
-
-        <div class="table-responsive">
-          <table class="table align-middle">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Date</th>
-                <th>Amount</th>
-                <th>Method</th>
-                <th>Due Date</th>
-                <th>Reference</th>
-                <th>Status</th>
-                <th>Notes</th>
-                <th style="width:110px;">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="paymentsTbody"></tbody>
-          </table>
-        </div>
       </div>
     </div>
 

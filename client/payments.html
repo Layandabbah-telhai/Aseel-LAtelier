@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Aseel L'Atelier - Payments</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="theme.css" rel="stylesheet">
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    requireAuth();
+  </script>
+</head>
+
+<body>
+  <div class="container py-4 py-md-5">
+
+    <div class="hero mb-4">
+      <div class="hero-inner">
+        <div class="hero-grid">
+          <div class="hero-brand-block">
+            <div class="logo-and-copy">
+              <img src="logo.png" alt="Aseel L'Atelier" class="logo-img">
+
+              <div class="hero-copy">
+                <div class="brand">Aseel L'Atelier</div>
+                <h1 class="hero-title">Payments</h1>
+                <p class="hero-sub">
+                  Manage payments for a selected order.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-actions">
+            <a class="btn btn-outline-secondary btn-soft" href="https://layandabbah-telhai.github.io/Aseel-LAtelier/client/customers.html">Customers</a>
+            <a class="btn btn-outline-secondary btn-soft" href="https://layandabbah-telhai.github.io/Aseel-LAtelier/client/dresses.html">Dresses</a>
+            <a class="btn btn-outline-secondary btn-soft" href="https://layandabbah-telhai.github.io/Aseel-LAtelier/client/orders.html">Orders</a>
+            <a class="btn btn-outline-secondary btn-soft" href="https://layandabbah-telhai.github.io/Aseel-LAtelier/client/appointments.html">Appointments</a>
+            <button class="btn btn-outline-danger btn-soft" onclick="logout()">Logout</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card card-luxe mb-4">
+      <div class="card-body">
+        <div class="small-muted">
+          API: <span id="apiUrlText">/api/orders/:id/payments</span>
+        </div>
+        <div class="mt-3" id="orderSummary"></div>
+      </div>
+    </div>
+
+    <div class="card card-luxe mb-4">
+      <div class="card-header">Add Payment</div>
+      <div class="card-body">
+        <form id="paymentForm" class="row g-3">
+          <div class="col-md-4">
+            <label class="label-soft">Payment Date</label>
+            <input id="payment_date" type="date" class="form-control" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="label-soft">Amount</label>
+            <input id="amount" type="number" step="0.01" class="form-control" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="label-soft">Method</label>
+            <input id="payment_method" class="form-control" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="label-soft">Due Date</label>
+            <input id="due_date" type="date" class="form-control" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="label-soft">Reference Number</label>
+            <input id="reference_number" class="form-control" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="label-soft">Payment Status</label>
+            <select id="payment_status" class="form-select">
+              <option value="Paid">Paid</option>
+              <option value="Partial">Partial</option>
+              <option value="Pending">Pending</option>
+              <option value="Unpaid">Unpaid</option>
+            </select>
+          </div>
+
+          <div class="col-12">
+            <label class="label-soft">Notes</label>
+            <input id="payment_notes" class="form-control" />
+          </div>
+
+          <div class="col-12 d-grid">
+            <button type="submit" class="btn btn-primary">Add Payment</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card card-luxe">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span>Payments List</span>
+        <span class="badge-soft px-3 py-2 rounded-pill" id="paymentsSummary">0 payments</span>
+      </div>
+
+      <div class="card-body table-responsive">
+        <table class="table align-middle">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Date</th>
+              <th>Amount</th>
+              <th>Method</th>
+              <th>Due Date</th>
+              <th>Reference</th>
+              <th>Status</th>
+              <th>Notes</th>
+              <th style="width:110px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="paymentsTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="payments.js"></script>
+</body>
+
+</html>

@@ -25,22 +25,8 @@ const returnDateWrap = document.getElementById("returnDateWrap");
 const totalPrice = document.getElementById("total_price");
 const statusField = document.getElementById("status");
 
-const paymentsCard = document.getElementById("paymentsCard");
-const paymentsTitle = document.getElementById("paymentsTitle");
-const paymentsSummary = document.getElementById("paymentsSummary");
-const paymentsTbody = document.getElementById("paymentsTbody");
-const paymentForm = document.getElementById("paymentForm");
-const paymentDate = document.getElementById("payment_date");
-const amount = document.getElementById("amount");
-const paymentMethod = document.getElementById("payment_method");
-const dueDate = document.getElementById("due_date");
-const referenceNumber = document.getElementById("reference_number");
-const paymentStatus = document.getElementById("payment_status");
-const paymentNotes = document.getElementById("payment_notes");
-
 let customersCache = [];
 let dressesCache = [];
-let selectedPaymentsOrderId = null;
 
 if (apiText) apiText.textContent = ENDPOINT;
 
@@ -200,9 +186,7 @@ function renderOrders(orders) {
           <td>${renderOrderStatus(o.status)}</td>
           <td>
             <button class="btn btn-sm btn-outline-primary" onclick="editOrder(${o.order_id})">Edit</button>
-            <button class="btn btn-sm btn-outline-secondary" onclick="openPayments(${o.order_id}, '${escapeHtml(
-        o.first_name
-      )} ${escapeHtml(o.last_name)}', '${escapeHtml(o.dress_name)}')">Payments</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="goToPayments(${o.order_id})">Payments</button>
             <button class="btn btn-sm btn-outline-danger" onclick="deleteOrder(${o.order_id})">Delete</button>
           </td>
         </tr>
@@ -210,6 +194,10 @@ function renderOrders(orders) {
     })
     .join("");
 }
+
+window.goToPayments = function (id) {
+  window.location.href = `payments.html?order_id=${id}`;
+};
 
 window.editOrder = async function (id) {
   const res = await fetch(`${ENDPOINT}/${id}`);
@@ -245,91 +233,7 @@ window.deleteOrder = async function (id) {
     return;
   }
 
-  if (selectedPaymentsOrderId === id) {
-    paymentsCard.style.display = "none";
-    selectedPaymentsOrderId = null;
-  }
-
   loadOrders();
-};
-
-window.openPayments = async function (id, customerName, dressName) {
-  selectedPaymentsOrderId = id;
-  paymentsCard.style.display = "";
-  paymentsTitle.textContent = `Payments — Order #${id} — ${customerName} — ${dressName}`;
-  paymentForm.reset();
-  paymentDate.value = new Date().toISOString().slice(0, 10);
-  await loadPayments(id);
-  paymentsCard.scrollIntoView({ behavior: "smooth" });
-};
-
-async function loadPayments(orderIdValue) {
-  try {
-    const res = await fetch(`${ENDPOINT}/${orderIdValue}/payments`);
-    if (!res.ok) throw new Error(`Failed to load payments (${res.status})`);
-
-    const payments = await res.json();
-    paymentsSummary.textContent = `${payments.length} payments`;
-
-    if (!payments.length) {
-      paymentsTbody.innerHTML = `
-        <tr>
-          <td colspan="9" class="text-center text-muted">
-            No payments found
-          </td>
-        </tr>
-      `;
-      return;
-    }
-
-    paymentsTbody.innerHTML = payments
-      .map(
-        (p) => `
-          <tr>
-            <td>${p.payment_id}</td>
-            <td>${formatDate(p.payment_date)}</td>
-            <td>${formatMoney(p.amount)}</td>
-            <td>${escapeHtml(p.payment_method || "")}</td>
-            <td>${formatDate(p.due_date)}</td>
-            <td>${escapeHtml(p.reference_number || "")}</td>
-            <td>${renderPaymentStatus(p.payment_status || "Paid")}</td>
-            <td>${escapeHtml(p.notes || "")}</td>
-            <td>
-              <button class="btn btn-sm btn-outline-danger" onclick="deletePayment(${p.payment_id})">
-                Delete
-              </button>
-            </td>
-          </tr>
-        `
-      )
-      .join("");
-  } catch (error) {
-    paymentsTbody.innerHTML = `
-      <tr>
-        <td colspan="9" class="text-center text-danger">
-          ${error.message}
-        </td>
-      </tr>
-    `;
-  }
-}
-
-window.deletePayment = async function (paymentId) {
-  if (!confirm("Delete this payment?")) return;
-
-  const res = await fetch(`${ENDPOINT}/payments/${paymentId}`, {
-    method: "DELETE",
-  });
-
-  if (!res.ok) {
-    alert("Failed to delete payment");
-    return;
-  }
-
-  if (selectedPaymentsOrderId) {
-    await loadPayments(selectedPaymentsOrderId);
-    await loadOrders();
-  }
 };
 
 orderForm.addEventListener("submit", async (e) => {
@@ -366,42 +270,6 @@ orderForm.addEventListener("submit", async (e) => {
   loadOrders();
 });
 
-paymentForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  if (!selectedPaymentsOrderId) {
-    alert("Select an order first");
-    return;
-  }
-
-  const data = {
-    payment_date: paymentDate.value,
-    amount: amount.value,
-    payment_method: paymentMethod.value,
-    due_date: dueDate.value,
-    reference_number: referenceNumber.value,
-    payment_status: paymentStatus.value,
-    notes: paymentNotes.value,
-  };
-
-  const res = await fetch(`${ENDPOINT}/${selectedPaymentsOrderId}/payments`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => null);
-    alert(err?.message || "Failed to add payment");
-    return;
-  }
-
-  paymentForm.reset();
-  paymentDate.value = new Date().toISOString().slice(0, 10);
-  await loadPayments(selectedPaymentsOrderId);
-  await loadOrders();
-});
-
 function clearOrderForm() {
   orderId.value = "";
   orderForm.reset();
@@ -434,5 +302,4 @@ dressId.addEventListener("change", updatePriceFromDress);
   await loadDresses();
   clearOrderForm();
   await loadOrders();
-  paymentDate.value = new Date().toISOString().slice(0, 10);
 })();
