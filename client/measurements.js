@@ -176,7 +176,7 @@ function renderMeasurements(rows) {
 
   tbody.innerHTML = rows.map((m) => `
     <tr>
-      <td>${m.measurement_id}</td>
+      <td>${m.order_id}</td>
       <td><a href="measurements.html?order_id=${m.order_id}">#${m.order_id}</a></td>
       <td>${escapeHtml(m.first_name || "")} ${escapeHtml(m.last_name || "")}</td>
       <td>${escapeHtml(m.dress_name || "")}</td>
