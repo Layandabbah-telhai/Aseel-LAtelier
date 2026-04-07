@@ -92,13 +92,12 @@ async function loadOrders() {
 
 async function loadOrderSummary() {
   if (urlOrderId) {
-    const res = await fetch(`${ORDERS_ENDPOINT}/${urlOrderId}`);
-    if (!res.ok) {
+    const order = ordersCache.find((o) => String(o.order_id) === String(urlOrderId));
+
+    if (!order) {
       orderSummary.innerHTML = `<div class="text-danger">Failed to load order.</div>`;
       return;
     }
-
-    const order = await res.json();
 
     orderSummary.innerHTML = `
       <div><strong>Selected Order #${order.order_id}</strong></div>

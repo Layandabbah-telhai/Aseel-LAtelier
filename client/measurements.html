@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Aseel L'Atelier - Measurements</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="theme.css" rel="stylesheet">
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    requireAuth();
+  </script>
+</head>
+
+<body>
+  <div class="container py-4 py-md-5">
+
+    <div class="hero mb-4">
+      <div class="hero-inner">
+        <div class="hero-grid">
+          <div class="hero-brand-block">
+            <div class="logo-and-copy">
+              <img src="logo.png" alt="Aseel L'Atelier" class="logo-img">
+
+              <div class="hero-copy">
+                <div class="brand">Aseel L'Atelier</div>
+                <h1 class="hero-title">Measurements</h1>
+                <p class="hero-sub">
+                  Manage tailoring measurements for each order and occasion.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-actions">
+            <a class="btn btn-outline-secondary btn-soft" href="https://layandabbah-telhai.github.io/Aseel-LAtelier/client/customers.html">Customers</a>
+            <a class="btn btn-outline-secondary btn-soft" href="https://layandabbah-telhai.github.io/Aseel-LAtelier/client/dresses.html">Dresses</a>
+            <a class="btn btn-outline-secondary btn-soft" href="https://layandabbah-telhai.github.io/Aseel-LAtelier/client/orders.html">Orders</a>
+            <a class="btn btn-outline-secondary btn-soft" href="https://layandabbah-telhai.github.io/Aseel-LAtelier/client/appointments.html">Appointments</a>
+            <a class="btn btn-outline-secondary btn-soft" href="https://layandabbah-telhai.github.io/Aseel-LAtelier/client/payments.html">Payments</a>
+            <button class="btn btn-outline-danger btn-soft" onclick="logout()">Logout</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card card-luxe mb-4">
+      <div class="card-body">
+        <div class="small-muted">
+          API: <span id="apiUrlText">/api/measurements</span>
+        </div>
+        <div class="mt-3" id="orderSummary"></div>
+      </div>
+    </div>
+
+    <div class="card card-luxe mb-4">
+      <div class="card-header">Measurement Details</div>
+      <div class="card-body">
+        <form id="measurementForm" class="row g-3">
+          <input type="hidden" id="measurement_id" />
+
+          <div class="col-md-6">
+            <label class="label-soft">Customer *</label>
+            <select id="customer_id" class="form-select" required></select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="label-soft">Order *</label>
+            <select id="order_id" class="form-select" required></select>
+          </div>
+
+          <div class="col-md-4">
+            <label class="label-soft">Tailoring Type</label>
+            <select id="tailoring_type" class="form-select">
+              <option value="">Select...</option>
+              <option value="Special Tailoring">Special Tailoring</option>
+              <option value="Regular Tailoring">Regular Tailoring</option>
+            </select>
+          </div>
+
+          <div class="col-md-4">
+            <label class="label-soft">Bust</label>
+            <input id="bust" type="number" step="0.01" class="form-control" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="label-soft">Waist</label>
+            <input id="waist" type="number" step="0.01" class="form-control" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="label-soft">Hips</label>
+            <input id="hips" type="number" step="0.01" class="form-control" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="label-soft">Shoulder</label>
+            <input id="shoulder" type="number" step="0.01" class="form-control" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="label-soft">Sleeve Length</label>
+            <input id="sleeve_length" type="number" step="0.01" class="form-control" />
+          </div>
+
+          <div class="col-md-6">
+            <label class="label-soft">Dress Length</label>
+            <input id="dress_length" type="number" step="0.01" class="form-control" />
+          </div>
+
+          <div class="col-md-6">
+            <label class="label-soft">Notes</label>
+            <input id="notes" class="form-control" />
+          </div>
+
+          <div class="col-md-6 d-grid">
+            <button type="submit" class="btn btn-primary">Save</button>
+          </div>
+
+          <div class="col-md-6 d-grid">
+            <button id="cancelEditBtn" type="button" class="btn btn-outline-secondary">Cancel Edit</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card card-luxe">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span>Measurements</span>
+        <span class="badge-soft px-3 py-2 rounded-pill" id="measurementsCount">0 measurements</span>
+      </div>
+
+      <div class="card-body table-responsive">
+        <table class="table align-middle">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Order</th>
+              <th>Customer</th>
+              <th>Dress</th>
+              <th>Occasion</th>
+              <th>Tailoring</th>
+              <th>Bust</th>
+              <th>Waist</th>
+              <th>Hips</th>
+              <th>Shoulder</th>
+              <th>Sleeve</th>
+              <th>Dress Length</th>
+              <th>Notes</th>
+              <th style="width:180px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="measurementsTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="measurements.js"></script>
+</body>
+
+</html>
