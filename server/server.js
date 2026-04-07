@@ -23,8 +23,8 @@ const AppointmentsController = require("./appointments/controller");
 const createAppointmentsRouter = require("./appointments/routes");
 
 const MeasurementsModel = require("./measurements/model");
-const MeasurementsController = require("./measurements/controller.js/index.js");
-const createMeasurementsRouter = require("./measurements/routes.js");
+const MeasurementsController = require("./measurements/controller");
+const createMeasurementsRouter = require("./measurements/routes");
 
 const app = express();
 
