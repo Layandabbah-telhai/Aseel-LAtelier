@@ -1,4 +1,4 @@
-const API_BASE = "https://aseel-latelier.onrender.com/api";
+const API_BASE = "/api";
 const ENDPOINT = `${API_BASE}/customers`;
 
 // Elements
