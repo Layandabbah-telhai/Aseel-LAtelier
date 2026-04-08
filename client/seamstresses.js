@@ -69,7 +69,7 @@ function renderOrderSummary() {
 
   orderSummary.innerHTML = `
     <div><strong>All Seamstress Assignments</strong></div>
-    <div>Assign seamstresses to any order, or open this page from an order to focus on one order only.</div>
+    <div>Assign seamstresses to any order, and you can create more than one assignment for the same order.</div>
   `;
 }
 
@@ -181,7 +181,7 @@ function renderAssignmentsTable(rows) {
 
   assignmentsTbody.innerHTML = rows.map((a) => `
     <tr>
-      <td>${a.order_id}</td>
+      <td>${a.assignment_id}</td>
       <td><a href="seamstresses.html?order_id=${a.order_id}">#${a.order_id}</a></td>
       <td>${escapeHtml(a.first_name || "")} ${escapeHtml(a.last_name || "")}</td>
       <td>${escapeHtml(a.dress_name || "")}</td>
