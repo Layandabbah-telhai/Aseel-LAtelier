@@ -109,6 +109,14 @@ class SeamstressesController {
       res.json({ message: "Deleted" });
     } catch (err) {
       console.error("SEAMSTRESSES DELETE ERROR:", err);
+
+      if (err?.code === "ER_ROW_IS_REFERENCED_2" || err?.errno === 1451) {
+        return res.status(400).json({
+          message:
+            "Cannot delete this seamstress because she is assigned to one or more orders. Delete the related assignments first.",
+        });
+      }
+
       res.status(500).json({ message: "Server error", error: String(err) });
     }
   }
