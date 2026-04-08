@@ -133,20 +133,30 @@ function renderSeamstressesTable(rows) {
   `).join("");
 }
 
+async function loadAssignmentsForOrder(orderIdValue) {
+  const res = await fetch(`${ASSIGNMENTS_ENDPOINT}?order_id=${encodeURIComponent(orderIdValue)}`);
+  if (!res.ok) {
+    throw new Error(`Failed to load assignments (${res.status})`);
+  }
+
+  const rows = await res.json();
+  return Array.isArray(rows) ? rows : [];
+}
+
 async function loadAssignments() {
   try {
-    let url = ASSIGNMENTS_ENDPOINT;
+    let rows = [];
+
     if (urlOrderId) {
-      url += `?order_id=${encodeURIComponent(urlOrderId)}`;
+      rows = await loadAssignmentsForOrder(urlOrderId);
+    } else {
+      const allAssignments = await Promise.all(
+        ordersCache.map((order) => loadAssignmentsForOrder(order.order_id))
+      );
+      rows = allAssignments.flat();
     }
 
-    const res = await fetch(url);
-    if (!res.ok) {
-      throw new Error(`Failed to load assignments (${res.status})`);
-    }
-
-    const rows = await res.json();
-    renderAssignmentsTable(Array.isArray(rows) ? rows : []);
+    renderAssignmentsTable(rows);
   } catch (error) {
     assignmentsTbody.innerHTML = `
       <tr>
@@ -218,14 +228,18 @@ window.deleteSeamstress = async function (id) {
 };
 
 window.editAssignment = async function (id) {
-  const res = await fetch(ASSIGNMENTS_ENDPOINT + (urlOrderId ? `?order_id=${encodeURIComponent(urlOrderId)}` : ""));
-  if (!res.ok) {
-    alert("Failed to load assignment");
-    return;
+  let rows = [];
+
+  if (urlOrderId) {
+    rows = await loadAssignmentsForOrder(urlOrderId);
+  } else {
+    const allAssignments = await Promise.all(
+      ordersCache.map((order) => loadAssignmentsForOrder(order.order_id))
+    );
+    rows = allAssignments.flat();
   }
 
-  const rows = await res.json();
-  const a = (Array.isArray(rows) ? rows : []).find((row) => String(row.assignment_id) === String(id));
+  const a = rows.find((row) => String(row.assignment_id) === String(id));
 
   if (!a) {
     alert("Assignment not found");
@@ -304,9 +318,10 @@ assignmentForm.addEventListener("submit", async (e) => {
     body: JSON.stringify(data),
   });
 
+  const payload = await res.json().catch(() => null);
+
   if (!res.ok) {
-    const err = await res.json().catch(() => null);
-    alert(err?.message || "Failed to save assignment");
+    alert(payload?.message || "Failed to save assignment");
     return;
   }
 
