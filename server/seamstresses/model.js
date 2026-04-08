@@ -121,7 +121,12 @@ class SeamstressesModel {
     const params = [];
     let whereSql = "";
 
-    if (Number.isFinite(Number(order_id))) {
+    const hasOrderFilter =
+      order_id !== null &&
+      order_id !== undefined &&
+      String(order_id).trim() !== "";
+
+    if (hasOrderFilter) {
       whereSql = `WHERE os.order_id = ?`;
       params.push(Number(order_id));
     }
