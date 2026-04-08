@@ -26,6 +26,10 @@ const MeasurementsModel = require("./measurements/model");
 const MeasurementsController = require("./measurements/controller");
 const createMeasurementsRouter = require("./measurements/routes");
 
+const SeamstressesModel = require("./seamstresses/model");
+const SeamstressesController = require("./seamstresses/controller");
+const createSeamstressesRouter = require("./seamstresses/routes");
+
 const app = express();
 
 app.use(cors());
@@ -145,12 +149,17 @@ const measurementsModel = new MeasurementsModel(dbPool);
 const measurementsController = new MeasurementsController(measurementsModel);
 const measurementsRouter = createMeasurementsRouter(measurementsController);
 
+const seamstressesModel = new SeamstressesModel(dbPool);
+const seamstressesController = new SeamstressesController(seamstressesModel);
+const seamstressesRouter = createSeamstressesRouter(seamstressesController);
+
 app.use("/api/customers", customersRouter);
 app.use("/api/costumers", customersRouter);
 app.use("/api/dresses", dressesRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/appointments", appointmentsRouter);
 app.use("/api/measurements", measurementsRouter);
+app.use("/api/seamstresses", seamstressesRouter);
 
 // ---------------- STATIC ----------------
 const publicPath = path.join(__dirname, "..");

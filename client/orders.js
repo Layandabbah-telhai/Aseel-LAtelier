@@ -188,6 +188,7 @@ function renderOrders(orders) {
             <button class="btn btn-sm btn-outline-primary" onclick="editOrder(${o.order_id})">Edit</button>
             <button class="btn btn-sm btn-outline-secondary" onclick="goToPayments(${o.order_id})">Payments</button>
             <button class="btn btn-sm btn-outline-secondary" onclick="goToMeasurements(${o.order_id})">Measurements</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="goToSeamstresses(${o.order_id})">Seamstresses</button>
             <button class="btn btn-sm btn-outline-danger" onclick="deleteOrder(${o.order_id})">Delete</button>
           </td>
         </tr>
@@ -202,6 +203,10 @@ window.goToPayments = function (id) {
 
 window.goToMeasurements = function (id) {
   window.location.href = `measurements.html?order_id=${id}`;
+};
+
+window.goToSeamstresses = function (id) {
+  window.location.href = `seamstresses.html?order_id=${id}`;
 };
 
 window.editOrder = async function (id) {

@@ -1,0 +1,221 @@
+class SeamstressesModel {
+  constructor(dbPool) {
+    this.db = dbPool;
+    this.seamstressesTable = process.env.SEAMSTRESSES_TABLE || "seamstresses";
+    this.assignmentsTable = process.env.ORDER_SEAMSTRESSES_TABLE || "order_seamstresses";
+    this.ordersTable = process.env.ORDERS_TABLE || "orders";
+    this.customersTable = process.env.CUSTOMERS_TABLE || "customers";
+    this.dressesTable = process.env.DRESSES_TABLE || "dresses";
+  }
+
+  async listSeamstresses(search = "") {
+    const s = String(search || "").trim();
+    const params = [];
+    let whereSql = "";
+
+    if (s) {
+      const like = `%${s}%`;
+      whereSql = `
+        WHERE
+          name LIKE ? OR
+          phone LIKE ? OR
+          specialty LIKE ? OR
+          notes LIKE ?
+      `;
+      params.push(like, like, like, like);
+    }
+
+    const [rows] = await this.db.query(
+      `
+      SELECT
+        seamstress_id,
+        name,
+        phone,
+        specialty,
+        notes
+      FROM \`${this.seamstressesTable}\`
+      ${whereSql}
+      ORDER BY seamstress_id DESC
+      `,
+      params
+    );
+
+    return rows;
+  }
+
+  async getSeamstressById(id) {
+    const [rows] = await this.db.query(
+      `
+      SELECT
+        seamstress_id,
+        name,
+        phone,
+        specialty,
+        notes
+      FROM \`${this.seamstressesTable}\`
+      WHERE seamstress_id = ?
+      `,
+      [id]
+    );
+
+    return rows[0] || null;
+  }
+
+  async createSeamstress(data) {
+    const [result] = await this.db.query(
+      `
+      INSERT INTO \`${this.seamstressesTable}\`
+      (name, phone, specialty, notes)
+      VALUES (?, ?, ?, ?)
+      `,
+      [
+        data.name,
+        data.phone || null,
+        data.specialty || null,
+        data.notes || null,
+      ]
+    );
+
+    return this.getSeamstressById(result.insertId);
+  }
+
+  async updateSeamstress(id, data) {
+    await this.db.query(
+      `
+      UPDATE \`${this.seamstressesTable}\`
+      SET
+        name = ?,
+        phone = ?,
+        specialty = ?,
+        notes = ?
+      WHERE seamstress_id = ?
+      `,
+      [
+        data.name,
+        data.phone || null,
+        data.specialty || null,
+        data.notes || null,
+        id,
+      ]
+    );
+
+    return this.getSeamstressById(id);
+  }
+
+  async deleteSeamstress(id) {
+    const [result] = await this.db.query(
+      `DELETE FROM \`${this.seamstressesTable}\` WHERE seamstress_id = ?`,
+      [id]
+    );
+
+    return result.affectedRows > 0;
+  }
+
+  async listAssignments({ order_id = null } = {}) {
+    const params = [];
+    let whereSql = "";
+
+    if (Number.isFinite(Number(order_id))) {
+      whereSql = `WHERE os.order_id = ?`;
+      params.push(Number(order_id));
+    }
+
+    const [rows] = await this.db.query(
+      `
+      SELECT
+        os.assignment_id,
+        os.order_id,
+        os.seamstress_id,
+        os.task_type,
+        os.notes AS assignment_notes,
+        s.name,
+        s.phone,
+        s.specialty,
+        c.first_name,
+        c.last_name,
+        d.dress_name,
+        o.occasion_type
+      FROM \`${this.assignmentsTable}\` os
+      JOIN \`${this.seamstressesTable}\` s ON s.seamstress_id = os.seamstress_id
+      JOIN \`${this.ordersTable}\` o ON o.order_id = os.order_id
+      JOIN \`${this.customersTable}\` c ON c.customer_id = o.customer_id
+      LEFT JOIN \`${this.dressesTable}\` d ON d.dress_id = o.dress_id
+      ${whereSql}
+      ORDER BY os.assignment_id DESC
+      `,
+      params
+    );
+
+    return rows;
+  }
+
+  async getAssignmentById(id) {
+    const [rows] = await this.db.query(
+      `
+      SELECT
+        assignment_id,
+        order_id,
+        seamstress_id,
+        task_type,
+        notes
+      FROM \`${this.assignmentsTable}\`
+      WHERE assignment_id = ?
+      `,
+      [id]
+    );
+
+    return rows[0] || null;
+  }
+
+  async createAssignment(data) {
+    const [result] = await this.db.query(
+      `
+      INSERT INTO \`${this.assignmentsTable}\`
+      (order_id, seamstress_id, task_type, notes)
+      VALUES (?, ?, ?, ?)
+      `,
+      [
+        data.order_id,
+        data.seamstress_id,
+        data.task_type || null,
+        data.notes || null,
+      ]
+    );
+
+    return this.getAssignmentById(result.insertId);
+  }
+
+  async updateAssignment(id, data) {
+    await this.db.query(
+      `
+      UPDATE \`${this.assignmentsTable}\`
+      SET
+        order_id = ?,
+        seamstress_id = ?,
+        task_type = ?,
+        notes = ?
+      WHERE assignment_id = ?
+      `,
+      [
+        data.order_id,
+        data.seamstress_id,
+        data.task_type || null,
+        data.notes || null,
+        id,
+      ]
+    );
+
+    return this.getAssignmentById(id);
+  }
+
+  async deleteAssignment(id) {
+    const [result] = await this.db.query(
+      `DELETE FROM \`${this.assignmentsTable}\` WHERE assignment_id = ?`,
+      [id]
+    );
+
+    return result.affectedRows > 0;
+  }
+}
+
+module.exports = SeamstressesModel;
