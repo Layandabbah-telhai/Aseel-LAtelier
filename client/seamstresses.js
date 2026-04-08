@@ -11,8 +11,6 @@ const seamstressForm = document.getElementById("seamstressForm");
 const seamstressId = document.getElementById("seamstress_id");
 const nameField = document.getElementById("name");
 const phoneField = document.getElementById("phone");
-const specialtyField = document.getElementById("specialty");
-const seamstressNotesField = document.getElementById("seamstress_notes");
 const cancelSeamstressEditBtn = document.getElementById("cancelSeamstressEditBtn");
 
 const seamstressesTbody = document.getElementById("seamstressesTbody");
@@ -116,7 +114,7 @@ function renderSeamstressesTable(rows) {
   if (!rows.length) {
     seamstressesTbody.innerHTML = `
       <tr>
-        <td colspan="6" class="text-center text-muted">No seamstresses found</td>
+        <td colspan="4" class="text-center text-muted">No seamstresses found</td>
       </tr>
     `;
     return;
@@ -127,8 +125,6 @@ function renderSeamstressesTable(rows) {
       <td>${s.seamstress_id}</td>
       <td>${escapeHtml(s.name)}</td>
       <td>${escapeHtml(s.phone || "")}</td>
-      <td>${escapeHtml(s.specialty || "")}</td>
-      <td>${escapeHtml(s.notes || "")}</td>
       <td>
         <button class="btn btn-sm btn-outline-primary" onclick="editSeamstress(${s.seamstress_id})">Edit</button>
         <button class="btn btn-sm btn-outline-danger" onclick="deleteSeamstress(${s.seamstress_id})">Delete</button>
@@ -202,8 +198,6 @@ window.editSeamstress = async function (id) {
   seamstressId.value = s.seamstress_id;
   nameField.value = s.name || "";
   phoneField.value = s.phone || "";
-  specialtyField.value = s.specialty || "";
-  seamstressNotesField.value = s.notes || "";
 };
 
 window.deleteSeamstress = async function (id) {
@@ -268,8 +262,6 @@ seamstressForm.addEventListener("submit", async (e) => {
   const data = {
     name: nameField.value.trim(),
     phone: phoneField.value.trim(),
-    specialty: specialtyField.value.trim(),
-    notes: seamstressNotesField.value.trim(),
   };
 
   const id = seamstressId.value;

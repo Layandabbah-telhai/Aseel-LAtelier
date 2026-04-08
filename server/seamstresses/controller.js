@@ -2,8 +2,6 @@ function normalizeSeamstressInput(body) {
   return {
     name: String(body?.name || "").trim(),
     phone: String(body?.phone || "").trim(),
-    specialty: String(body?.specialty || "").trim(),
-    notes: String(body?.notes || "").trim(),
   };
 }
 

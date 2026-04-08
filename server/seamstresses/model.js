@@ -18,11 +18,9 @@ class SeamstressesModel {
       whereSql = `
         WHERE
           name LIKE ? OR
-          phone LIKE ? OR
-          specialty LIKE ? OR
-          notes LIKE ?
+          phone LIKE ?
       `;
-      params.push(like, like, like, like);
+      params.push(like, like);
     }
 
     const [rows] = await this.db.query(
@@ -30,9 +28,7 @@ class SeamstressesModel {
       SELECT
         seamstress_id,
         name,
-        phone,
-        specialty,
-        notes
+        phone
       FROM \`${this.seamstressesTable}\`
       ${whereSql}
       ORDER BY seamstress_id DESC
@@ -49,9 +45,7 @@ class SeamstressesModel {
       SELECT
         seamstress_id,
         name,
-        phone,
-        specialty,
-        notes
+        phone
       FROM \`${this.seamstressesTable}\`
       WHERE seamstress_id = ?
       `,
@@ -65,14 +59,12 @@ class SeamstressesModel {
     const [result] = await this.db.query(
       `
       INSERT INTO \`${this.seamstressesTable}\`
-      (name, phone, specialty, notes)
-      VALUES (?, ?, ?, ?)
+      (name, phone)
+      VALUES (?, ?)
       `,
       [
         data.name,
         data.phone || null,
-        data.specialty || null,
-        data.notes || null,
       ]
     );
 
@@ -85,16 +77,12 @@ class SeamstressesModel {
       UPDATE \`${this.seamstressesTable}\`
       SET
         name = ?,
-        phone = ?,
-        specialty = ?,
-        notes = ?
+        phone = ?
       WHERE seamstress_id = ?
       `,
       [
         data.name,
         data.phone || null,
-        data.specialty || null,
-        data.notes || null,
         id,
       ]
     );
@@ -130,7 +118,6 @@ class SeamstressesModel {
         os.notes AS assignment_notes,
         s.name,
         s.phone,
-        s.specialty,
         c.first_name,
         c.last_name,
         d.dress_name,
