@@ -3,6 +3,14 @@ const SEAMSTRESSES_ENDPOINT = `${API_BASE}/seamstresses`;
 const ASSIGNMENTS_ENDPOINT = `${API_BASE}/seamstresses/assignments`;
 const ORDERS_ENDPOINT = `${API_BASE}/orders`;
 
+const TASK_TYPE_OPTIONS = [
+    "Special Tailoring",
+    "Regular Tailoring",
+    "Alteration",
+    "Fitting Update",
+    "Final Adjustment",
+];
+
 const apiTextRegistry = document.getElementById("apiTextRegistry");
 const apiTextAssignments = document.getElementById("apiTextAssignments");
 const orderSummary = document.getElementById("orderSummary");
@@ -75,20 +83,28 @@ function renderOrderSummary() {
 }
 
 function renderSeamstressOptions() {
-    assignedSeamstressId.innerHTML = seamstressesCache.map((s) => `
+    const placeholder = `<option value="">Select seamstress...</option>`;
+    const options = seamstressesCache.map((s) => `
     <option value="${s.seamstress_id}">${escapeHtml(s.name)}</option>
   `).join("");
+
+    assignedSeamstressId.innerHTML = `${placeholder}${options}`;
 }
 
 function renderOrderOptions() {
-    orderIdField.innerHTML = ordersCache.map((o) => `
+    const placeholder = `<option value="">Select order...</option>`;
+    const options = ordersCache.map((o) => `
     <option value="${o.order_id}">
       #${o.order_id} - ${escapeHtml(o.first_name || "")} ${escapeHtml(o.last_name || "")} - ${escapeHtml(o.dress_name || "")}
     </option>
   `).join("");
 
+    orderIdField.innerHTML = `${placeholder}${options}`;
+
     if (urlOrderId) {
         orderIdField.value = urlOrderId;
+    } else {
+        orderIdField.value = "";
     }
 }
 
@@ -121,17 +137,25 @@ function renderSeamstressesTable(rows) {
         return;
     }
 
-    seamstressesTbody.innerHTML = rows.map((s) => `
-    <tr>
-      <td>${s.seamstress_id}</td>
-      <td>${escapeHtml(s.name)}</td>
-      <td>${escapeHtml(s.phone || "")}</td>
-      <td>
-        <button class="btn btn-sm btn-outline-primary" onclick="editSeamstress(${s.seamstress_id})">Edit</button>
-        <button class="btn btn-sm btn-outline-danger" onclick="deleteSeamstress(${s.seamstress_id})">Delete</button>
-      </td>
-    </tr>
-  `).join("");
+    seamstressesTbody.innerHTML = rows.map((s) => {
+        const assignmentCount = Number(s.assignment_count || 0);
+        const canDelete = assignmentCount === 0;
+
+        return `
+      <tr>
+        <td>${s.seamstress_id}</td>
+        <td>${escapeHtml(s.name)}</td>
+        <td>${escapeHtml(s.phone || "")}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-primary" onclick="editSeamstress(${s.seamstress_id})">Edit</button>
+          ${canDelete
+                ? `<button class="btn btn-sm btn-outline-danger" onclick="deleteSeamstress(${s.seamstress_id})">Delete</button>`
+                : `<span class="btn btn-sm btn-outline-secondary disabled" title="This seamstress has assignments and cannot be deleted yet.">Assigned (${assignmentCount})</span>`
+            }
+        </td>
+      </tr>
+    `;
+    }).join("");
 }
 
 async function loadAssignments() {
@@ -251,6 +275,7 @@ window.deleteAssignment = async function (id) {
 
     clearAssignmentForm();
     await loadAssignments();
+    await loadSeamstresses();
 };
 
 seamstressForm.addEventListener("submit", async (e) => {
@@ -279,7 +304,9 @@ seamstressForm.addEventListener("submit", async (e) => {
 
     clearSeamstressForm();
     await loadSeamstresses();
-});
+}
+
+);
 
 assignmentForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -310,6 +337,7 @@ assignmentForm.addEventListener("submit", async (e) => {
 
     clearAssignmentForm();
     await loadAssignments();
+    await loadSeamstresses();
 });
 
 function clearSeamstressForm() {
@@ -320,6 +348,10 @@ function clearSeamstressForm() {
 function clearAssignmentForm() {
     assignmentId.value = "";
     assignmentForm.reset();
+
+    orderIdField.value = "";
+    assignedSeamstressId.value = "";
+    taskTypeField.value = "";
 
     if (urlOrderId) {
         orderIdField.value = urlOrderId;

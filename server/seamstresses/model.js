@@ -17,8 +17,8 @@ class SeamstressesModel {
       const like = `%${s}%`;
       whereSql = `
         WHERE
-          name LIKE ? OR
-          phone LIKE ?
+          s.name LIKE ? OR
+          s.phone LIKE ?
       `;
       params.push(like, like);
     }
@@ -26,12 +26,19 @@ class SeamstressesModel {
     const [rows] = await this.db.query(
       `
       SELECT
-        seamstress_id,
-        name,
-        phone
-      FROM \`${this.seamstressesTable}\`
+        s.seamstress_id,
+        s.name,
+        s.phone,
+        COUNT(os.assignment_id) AS assignment_count
+      FROM \`${this.seamstressesTable}\` s
+      LEFT JOIN \`${this.assignmentsTable}\` os
+        ON os.seamstress_id = s.seamstress_id
       ${whereSql}
-      ORDER BY seamstress_id DESC
+      GROUP BY
+        s.seamstress_id,
+        s.name,
+        s.phone
+      ORDER BY s.seamstress_id DESC
       `,
       params
     );
@@ -43,11 +50,18 @@ class SeamstressesModel {
     const [rows] = await this.db.query(
       `
       SELECT
-        seamstress_id,
-        name,
-        phone
-      FROM \`${this.seamstressesTable}\`
-      WHERE seamstress_id = ?
+        s.seamstress_id,
+        s.name,
+        s.phone,
+        COUNT(os.assignment_id) AS assignment_count
+      FROM \`${this.seamstressesTable}\` s
+      LEFT JOIN \`${this.assignmentsTable}\` os
+        ON os.seamstress_id = s.seamstress_id
+      WHERE s.seamstress_id = ?
+      GROUP BY
+        s.seamstress_id,
+        s.name,
+        s.phone
       `,
       [id]
     );
@@ -72,7 +86,7 @@ class SeamstressesModel {
   }
 
   async updateSeamstress(id, data) {
-    await this.db.query(
+    const [result] = await this.db.query(
       `
       UPDATE \`${this.seamstressesTable}\`
       SET
@@ -86,6 +100,10 @@ class SeamstressesModel {
         id,
       ]
     );
+
+    if (result.affectedRows === 0) {
+      return null;
+    }
 
     return this.getSeamstressById(id);
   }
@@ -164,7 +182,7 @@ class SeamstressesModel {
       [
         data.order_id,
         data.seamstress_id,
-        data.task_type || null,
+        data.task_type,
         data.notes || null,
       ]
     );
@@ -173,7 +191,7 @@ class SeamstressesModel {
   }
 
   async updateAssignment(id, data) {
-    await this.db.query(
+    const [result] = await this.db.query(
       `
       UPDATE \`${this.assignmentsTable}\`
       SET
@@ -186,11 +204,15 @@ class SeamstressesModel {
       [
         data.order_id,
         data.seamstress_id,
-        data.task_type || null,
+        data.task_type,
         data.notes || null,
         id,
       ]
     );
+
+    if (result.affectedRows === 0) {
+      return null;
+    }
 
     return this.getAssignmentById(id);
   }

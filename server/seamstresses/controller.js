@@ -1,3 +1,11 @@
+const ALLOWED_TASK_TYPES = [
+  "Special Tailoring",
+  "Regular Tailoring",
+  "Alteration",
+  "Fitting Update",
+  "Final Adjustment",
+];
+
 function normalizeSeamstressInput(body) {
   return {
     name: String(body?.name || "").trim(),
@@ -12,6 +20,18 @@ function normalizeAssignmentInput(body) {
     task_type: String(body?.task_type || "").trim(),
     notes: String(body?.notes || "").trim(),
   };
+}
+
+function validateTaskType(taskType) {
+  if (!taskType) {
+    return "task_type is required";
+  }
+
+  if (!ALLOWED_TASK_TYPES.includes(taskType)) {
+    return `task_type must be one of: ${ALLOWED_TASK_TYPES.join(", ")}`;
+  }
+
+  return null;
 }
 
 class SeamstressesController {
@@ -145,6 +165,11 @@ class SeamstressesController {
         return res.status(400).json({ message: "seamstress_id is required" });
       }
 
+      const taskTypeError = validateTaskType(data.task_type);
+      if (taskTypeError) {
+        return res.status(400).json({ message: taskTypeError });
+      }
+
       const created = await this.model.createAssignment(data);
       res.status(201).json(created);
     } catch (err) {
@@ -168,6 +193,11 @@ class SeamstressesController {
 
       if (!Number.isFinite(data.seamstress_id)) {
         return res.status(400).json({ message: "seamstress_id is required" });
+      }
+
+      const taskTypeError = validateTaskType(data.task_type);
+      if (taskTypeError) {
+        return res.status(400).json({ message: taskTypeError });
       }
 
       const updated = await this.model.updateAssignment(id, data);
