@@ -35,92 +35,92 @@ let ordersCache = [];
 
 if (apiTextRegistry) apiTextRegistry.textContent = SEAMSTRESSES_ENDPOINT;
 if (apiTextAssignments) {
-  apiTextAssignments.textContent = urlOrderId
-    ? `${ASSIGNMENTS_ENDPOINT}?order_id=${urlOrderId}`
-    : ASSIGNMENTS_ENDPOINT;
+    apiTextAssignments.textContent = urlOrderId
+        ? `${ASSIGNMENTS_ENDPOINT}?order_id=${urlOrderId}`
+        : ASSIGNMENTS_ENDPOINT;
 }
 
 function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
 }
 
 function renderOrderSummary() {
-  if (urlOrderId) {
-    const order = ordersCache.find((o) => String(o.order_id) === String(urlOrderId));
+    if (urlOrderId) {
+        const order = ordersCache.find((o) => String(o.order_id) === String(urlOrderId));
 
-    if (!order) {
-      orderSummary.innerHTML = `<div class="text-danger">Failed to load selected order.</div>`;
-      return;
-    }
+        if (!order) {
+            orderSummary.innerHTML = `<div class="text-danger">Failed to load selected order.</div>`;
+            return;
+        }
 
-    orderSummary.innerHTML = `
+        orderSummary.innerHTML = `
       <div><strong>Selected Order #${order.order_id}</strong></div>
       <div>Customer: ${escapeHtml(order.first_name || "")} ${escapeHtml(order.last_name || "")}</div>
       <div>Dress: ${escapeHtml(order.dress_name || "")}</div>
       <div>Occasion: ${escapeHtml(order.occasion_type || "")}</div>
     `;
-    return;
-  }
+        return;
+    }
 
-  orderSummary.innerHTML = `
+    orderSummary.innerHTML = `
     <div><strong>All Seamstress Assignments</strong></div>
     <div>Assign seamstresses to any order, and you can create more than one assignment for the same order.</div>
   `;
 }
 
 function renderSeamstressOptions() {
-  assignedSeamstressId.innerHTML = seamstressesCache.map((s) => `
+    assignedSeamstressId.innerHTML = seamstressesCache.map((s) => `
     <option value="${s.seamstress_id}">${escapeHtml(s.name)}</option>
   `).join("");
 }
 
 function renderOrderOptions() {
-  orderIdField.innerHTML = ordersCache.map((o) => `
+    orderIdField.innerHTML = ordersCache.map((o) => `
     <option value="${o.order_id}">
       #${o.order_id} - ${escapeHtml(o.first_name || "")} ${escapeHtml(o.last_name || "")} - ${escapeHtml(o.dress_name || "")}
     </option>
   `).join("");
 
-  if (urlOrderId) {
-    orderIdField.value = urlOrderId;
-  }
+    if (urlOrderId) {
+        orderIdField.value = urlOrderId;
+    }
 }
 
 async function loadOrders() {
-  const res = await fetch(ORDERS_ENDPOINT);
-  if (!res.ok) throw new Error("Failed to load orders");
-  ordersCache = await res.json();
-  renderOrderOptions();
-  renderOrderSummary();
+    const res = await fetch(ORDERS_ENDPOINT);
+    if (!res.ok) throw new Error("Failed to load orders");
+    ordersCache = await res.json();
+    renderOrderOptions();
+    renderOrderSummary();
 }
 
 async function loadSeamstresses() {
-  const res = await fetch(SEAMSTRESSES_ENDPOINT);
-  if (!res.ok) throw new Error("Failed to load seamstresses");
+    const res = await fetch(SEAMSTRESSES_ENDPOINT);
+    if (!res.ok) throw new Error("Failed to load seamstresses");
 
-  seamstressesCache = await res.json();
-  renderSeamstressOptions();
-  renderSeamstressesTable(seamstressesCache);
+    seamstressesCache = await res.json();
+    renderSeamstressOptions();
+    renderSeamstressesTable(seamstressesCache);
 }
 
 function renderSeamstressesTable(rows) {
-  seamstressesCount.textContent = `${rows.length} seamstresses`;
+    seamstressesCount.textContent = `${rows.length} seamstresses`;
 
-  if (!rows.length) {
-    seamstressesTbody.innerHTML = `
+    if (!rows.length) {
+        seamstressesTbody.innerHTML = `
       <tr>
         <td colspan="4" class="text-center text-muted">No seamstresses found</td>
       </tr>
     `;
-    return;
-  }
+        return;
+    }
 
-  seamstressesTbody.innerHTML = rows.map((s) => `
+    seamstressesTbody.innerHTML = rows.map((s) => `
     <tr>
       <td>${s.seamstress_id}</td>
       <td>${escapeHtml(s.name)}</td>
@@ -134,52 +134,52 @@ function renderSeamstressesTable(rows) {
 }
 
 async function loadAssignmentsForOrder(orderIdValue) {
-  const res = await fetch(`${ASSIGNMENTS_ENDPOINT}?order_id=${encodeURIComponent(orderIdValue)}`);
-  if (!res.ok) {
-    throw new Error(`Failed to load assignments (${res.status})`);
-  }
+    const res = await fetch(`${ASSIGNMENTS_ENDPOINT}?order_id=${encodeURIComponent(orderIdValue)}`);
+    if (!res.ok) {
+        throw new Error(`Failed to load assignments (${res.status})`);
+    }
 
-  const rows = await res.json();
-  return Array.isArray(rows) ? rows : [];
+    const rows = await res.json();
+    return Array.isArray(rows) ? rows : [];
 }
 
 async function loadAssignments() {
-  try {
-    let rows = [];
+    try {
+        let rows = [];
 
-    if (urlOrderId) {
-      rows = await loadAssignmentsForOrder(urlOrderId);
-    } else {
-      const allAssignments = await Promise.all(
-        ordersCache.map((order) => loadAssignmentsForOrder(order.order_id))
-      );
-      rows = allAssignments.flat();
-    }
+        if (urlOrderId) {
+            rows = await loadAssignmentsForOrder(urlOrderId);
+        } else {
+            const allAssignments = await Promise.all(
+                ordersCache.map((order) => loadAssignmentsForOrder(order.order_id))
+            );
+            rows = allAssignments.flat();
+        }
 
-    renderAssignmentsTable(rows);
-  } catch (error) {
-    assignmentsTbody.innerHTML = `
+        renderAssignmentsTable(rows);
+    } catch (error) {
+        assignmentsTbody.innerHTML = `
       <tr>
         <td colspan="9" class="text-center text-danger">${error.message}</td>
       </tr>
     `;
-    assignmentsCount.textContent = "0 assignments";
-  }
+        assignmentsCount.textContent = "0 assignments";
+    }
 }
 
 function renderAssignmentsTable(rows) {
-  assignmentsCount.textContent = `${rows.length} assignments`;
+    assignmentsCount.textContent = `${rows.length} assignments`;
 
-  if (!rows.length) {
-    assignmentsTbody.innerHTML = `
+    if (!rows.length) {
+        assignmentsTbody.innerHTML = `
       <tr>
         <td colspan="9" class="text-center text-muted">No assignments found</td>
       </tr>
     `;
-    return;
-  }
+        return;
+    }
 
-  assignmentsTbody.innerHTML = rows.map((a) => `
+    assignmentsTbody.innerHTML = rows.map((a) => `
     <tr>
       <td>${a.assignment_id}</td>
       <td><a href="seamstresses.html?order_id=${a.order_id}">#${a.order_id}</a></td>
@@ -198,157 +198,157 @@ function renderAssignmentsTable(rows) {
 }
 
 window.editSeamstress = async function (id) {
-  const res = await fetch(`${SEAMSTRESSES_ENDPOINT}/${id}`);
-  if (!res.ok) {
-    alert("Failed to load seamstress");
-    return;
-  }
+    const res = await fetch(`${SEAMSTRESSES_ENDPOINT}/${id}`);
+    if (!res.ok) {
+        alert("Failed to load seamstress");
+        return;
+    }
 
-  const s = await res.json();
-  seamstressId.value = s.seamstress_id;
-  nameField.value = s.name || "";
-  phoneField.value = s.phone || "";
+    const s = await res.json();
+    seamstressId.value = s.seamstress_id;
+    nameField.value = s.name || "";
+    phoneField.value = s.phone || "";
 };
 
 window.deleteSeamstress = async function (id) {
-  if (!confirm("Delete this seamstress?")) return;
+    if (!confirm("Delete this seamstress?")) return;
 
-  const res = await fetch(`${SEAMSTRESSES_ENDPOINT}/${id}`, {
-    method: "DELETE",
-  });
+    const res = await fetch(`${SEAMSTRESSES_ENDPOINT}/${id}`, {
+        method: "DELETE",
+    });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => null);
-    alert(err?.message || "Failed to delete seamstress");
-    return;
-  }
+    if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        alert(err?.message || "Failed to delete seamstress");
+        return;
+    }
 
-  clearSeamstressForm();
-  await loadSeamstresses();
+    clearSeamstressForm();
+    await loadSeamstresses();
 };
 
 window.editAssignment = async function (id) {
-  let rows = [];
+    let rows = [];
 
-  if (urlOrderId) {
-    rows = await loadAssignmentsForOrder(urlOrderId);
-  } else {
-    const allAssignments = await Promise.all(
-      ordersCache.map((order) => loadAssignmentsForOrder(order.order_id))
-    );
-    rows = allAssignments.flat();
-  }
+    if (urlOrderId) {
+        rows = await loadAssignmentsForOrder(urlOrderId);
+    } else {
+        const allAssignments = await Promise.all(
+            ordersCache.map((order) => loadAssignmentsForOrder(order.order_id))
+        );
+        rows = allAssignments.flat();
+    }
 
-  const a = rows.find((row) => String(row.assignment_id) === String(id));
+    const a = rows.find((row) => String(row.assignment_id) === String(id));
 
-  if (!a) {
-    alert("Assignment not found");
-    return;
-  }
+    if (!a) {
+        alert("Assignment not found");
+        return;
+    }
 
-  assignmentId.value = a.assignment_id;
-  orderIdField.value = a.order_id;
-  assignedSeamstressId.value = a.seamstress_id;
-  taskTypeField.value = a.task_type || "";
-  assignmentNotesField.value = a.assignment_notes || "";
+    assignmentId.value = a.assignment_id;
+    orderIdField.value = a.order_id;
+    assignedSeamstressId.value = a.seamstress_id;
+    taskTypeField.value = a.task_type || "";
+    assignmentNotesField.value = a.assignment_notes || "";
 };
 
 window.deleteAssignment = async function (id) {
-  if (!confirm("Delete this assignment?")) return;
+    if (!confirm("Delete this assignment?")) return;
 
-  const res = await fetch(`${ASSIGNMENTS_ENDPOINT}/${id}`, {
-    method: "DELETE",
-  });
+    const res = await fetch(`${ASSIGNMENTS_ENDPOINT}/${id}`, {
+        method: "DELETE",
+    });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => null);
-    alert(err?.message || "Failed to delete assignment");
-    return;
-  }
+    if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        alert(err?.message || "Failed to delete assignment");
+        return;
+    }
 
-  clearAssignmentForm();
-  await loadAssignments();
+    clearAssignmentForm();
+    await loadAssignments();
 };
 
 seamstressForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const data = {
-    name: nameField.value.trim(),
-    phone: phoneField.value.trim(),
-  };
+    const data = {
+        name: nameField.value.trim(),
+        phone: phoneField.value.trim(),
+    };
 
-  const id = seamstressId.value;
-  const method = id ? "PUT" : "POST";
-  const url = id ? `${SEAMSTRESSES_ENDPOINT}/${id}` : SEAMSTRESSES_ENDPOINT;
+    const id = seamstressId.value;
+    const method = id ? "PUT" : "POST";
+    const url = id ? `${SEAMSTRESSES_ENDPOINT}/${id}` : SEAMSTRESSES_ENDPOINT;
 
-  const res = await fetch(url, {
-    method,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
+    const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+    });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => null);
-    alert(err?.message || "Failed to save seamstress");
-    return;
-  }
+    if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        alert(err?.message || "Failed to save seamstress");
+        return;
+    }
 
-  clearSeamstressForm();
-  await loadSeamstresses();
+    clearSeamstressForm();
+    await loadSeamstresses();
 });
 
 assignmentForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const data = {
-    order_id: orderIdField.value,
-    seamstress_id: assignedSeamstressId.value,
-    task_type: taskTypeField.value,
-    notes: assignmentNotesField.value.trim(),
-  };
+    const data = {
+        order_id: orderIdField.value,
+        seamstress_id: assignedSeamstressId.value,
+        task_type: taskTypeField.value,
+        notes: assignmentNotesField.value.trim(),
+    };
 
-  const id = assignmentId.value;
-  const method = id ? "PUT" : "POST";
-  const url = id ? `${ASSIGNMENTS_ENDPOINT}/${id}` : ASSIGNMENTS_ENDPOINT;
+    const id = assignmentId.value;
+    const method = id ? "PUT" : "POST";
+    const url = id ? `${ASSIGNMENTS_ENDPOINT}/${id}` : ASSIGNMENTS_ENDPOINT;
 
-  const res = await fetch(url, {
-    method,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
+    const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+    });
 
-  const payload = await res.json().catch(() => null);
+    const payload = await res.json().catch(() => null);
 
-  if (!res.ok) {
-    alert(payload?.message || "Failed to save assignment");
-    return;
-  }
+    if (!res.ok) {
+        alert(payload?.message || "Failed to save assignment");
+        return;
+    }
 
-  clearAssignmentForm();
-  await loadAssignments();
+    clearAssignmentForm();
+    await loadAssignments();
 });
 
 function clearSeamstressForm() {
-  seamstressId.value = "";
-  seamstressForm.reset();
+    seamstressId.value = "";
+    seamstressForm.reset();
 }
 
 function clearAssignmentForm() {
-  assignmentId.value = "";
-  assignmentForm.reset();
+    assignmentId.value = "";
+    assignmentForm.reset();
 
-  if (urlOrderId) {
-    orderIdField.value = urlOrderId;
-  }
+    if (urlOrderId) {
+        orderIdField.value = urlOrderId;
+    }
 }
 
 cancelSeamstressEditBtn.addEventListener("click", clearSeamstressForm);
 cancelAssignmentEditBtn.addEventListener("click", clearAssignmentForm);
 
 (async function init() {
-  await loadOrders();
-  await loadSeamstresses();
-  clearAssignmentForm();
-  await loadAssignments();
+    await loadOrders();
+    await loadSeamstresses();
+    clearAssignmentForm();
+    await loadAssignments();
 })();
