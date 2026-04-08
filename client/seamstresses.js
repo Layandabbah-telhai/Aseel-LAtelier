@@ -32,6 +32,7 @@ const urlOrderId = params.get("order_id");
 
 let seamstressesCache = [];
 let ordersCache = [];
+let assignmentsCache = [];
 
 if (apiTextRegistry) apiTextRegistry.textContent = SEAMSTRESSES_ENDPOINT;
 if (apiTextAssignments) {
@@ -133,31 +134,24 @@ function renderSeamstressesTable(rows) {
   `).join("");
 }
 
-async function loadAssignmentsForOrder(orderIdValue) {
-    const res = await fetch(`${ASSIGNMENTS_ENDPOINT}?order_id=${encodeURIComponent(orderIdValue)}`);
-    if (!res.ok) {
-        throw new Error(`Failed to load assignments (${res.status})`);
-    }
-
-    const rows = await res.json();
-    return Array.isArray(rows) ? rows : [];
-}
-
 async function loadAssignments() {
     try {
-        let rows = [];
+        const url = urlOrderId
+            ? `${ASSIGNMENTS_ENDPOINT}?order_id=${encodeURIComponent(urlOrderId)}`
+            : ASSIGNMENTS_ENDPOINT;
 
-        if (urlOrderId) {
-            rows = await loadAssignmentsForOrder(urlOrderId);
-        } else {
-            const allAssignments = await Promise.all(
-                ordersCache.map((order) => loadAssignmentsForOrder(order.order_id))
-            );
-            rows = allAssignments.flat();
+        const res = await fetch(url);
+
+        if (!res.ok) {
+            throw new Error(`Failed to load assignments (${res.status})`);
         }
 
-        renderAssignmentsTable(rows);
+        const rows = await res.json();
+        assignmentsCache = Array.isArray(rows) ? rows : [];
+
+        renderAssignmentsTable(assignmentsCache);
     } catch (error) {
+        assignmentsCache = [];
         assignmentsTbody.innerHTML = `
       <tr>
         <td colspan="9" class="text-center text-danger">${error.message}</td>
@@ -228,18 +222,7 @@ window.deleteSeamstress = async function (id) {
 };
 
 window.editAssignment = async function (id) {
-    let rows = [];
-
-    if (urlOrderId) {
-        rows = await loadAssignmentsForOrder(urlOrderId);
-    } else {
-        const allAssignments = await Promise.all(
-            ordersCache.map((order) => loadAssignmentsForOrder(order.order_id))
-        );
-        rows = allAssignments.flat();
-    }
-
-    const a = rows.find((row) => String(row.assignment_id) === String(id));
+    const a = assignmentsCache.find((row) => String(row.assignment_id) === String(id));
 
     if (!a) {
         alert("Assignment not found");
