@@ -17,32 +17,17 @@
 <body>
   <div class="container py-4 py-md-5">
 
-    <!-- HERO -->
-    <div class="hero mb-4">
-      <div class="hero-inner d-flex justify-content-between align-items-center">
+    <div id="sharedNav"></div>
 
-        <div>
-          <div class="brand">Aseel L'Atelier</div>
-          <h1 class="hero-title">Seamstresses & Assignments</h1>
-        </div>
-
-        <div class="hero-actions">
-          <a class="btn btn-outline-secondary btn-soft" href="customers.html">Customers</a>
-          <a class="btn btn-outline-secondary btn-soft" href="orders.html">Orders</a>
-          <a class="btn btn-outline-secondary btn-soft" href="appointments.html">Appointments</a>
-          <a class="btn btn-outline-secondary btn-soft" href="payments.html">Payments</a>
-          <button class="btn btn-outline-danger btn-soft" onclick="logout()">Logout</button>
-        </div>
-
-      </div>
+    <div class="mb-4">
+      <h1 class="hero-title mb-2">Seamstresses & Assignments</h1>
+      <p class="hero-sub mb-0">Manage seamstresses and order assignments.</p>
     </div>
 
-    <!-- ORDER SUMMARY -->
     <div class="card card-luxe mb-4">
       <div class="card-body" id="orderSummary"></div>
     </div>
 
-    <!-- SEAMSTRESS FORM -->
     <div class="card card-luxe mb-4">
       <div class="card-header">Seamstress</div>
       <div class="card-body">
@@ -71,7 +56,6 @@
       </div>
     </div>
 
-    <!-- ASSIGNMENT FORM -->
     <div class="card card-luxe mb-4">
       <div class="card-header">Assignment</div>
       <div class="card-body">
@@ -81,12 +65,12 @@
           <input type="hidden" id="assignment_id">
 
           <div class="col-md-6">
-            <label>Order</label>
+            <label class="label-soft">Order</label>
             <select id="order_id" class="form-select" required></select>
           </div>
 
           <div class="col-md-6">
-            <label>Seamstress</label>
+            <label class="label-soft">Seamstress</label>
             <select id="assigned_seamstress_id" class="form-select" required></select>
           </div>
 
@@ -118,7 +102,6 @@
       </div>
     </div>
 
-    <!-- TABLE -->
     <div class="card card-luxe">
       <div class="card-header d-flex justify-content-between">
         <span>Assignments</span>
@@ -146,6 +129,7 @@
 
   </div>
 
+  <script src="nav.js"></script>
   <script src="seamstresses.js"></script>
 </body>
 

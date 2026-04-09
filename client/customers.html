@@ -5,103 +5,94 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Aseel L'Atelier - Customers</title>
-
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="theme.css" rel="stylesheet">
-
   <script src="config.js"></script>
   <script src="auth.js"></script>
-  <script>requireAuth();</script>
+  <script>
+    requireAuth();
+  </script>
 </head>
 
 <body>
   <div class="container py-4 py-md-5">
 
-    <div class="hero mb-4">
-      <div class="hero-inner d-flex justify-content-between align-items-center">
-        <div>
-          <div class="brand">Aseel L'Atelier</div>
-          <h1 class="hero-title">Customers</h1>
-        </div>
+    <div id="sharedNav"></div>
 
-        <div class="hero-actions">
-          <a class="btn btn-outline-secondary btn-soft" href="dresses.html">Dresses</a>
-          <a class="btn btn-outline-secondary btn-soft" href="orders.html">Orders</a>
-          <a class="btn btn-outline-secondary btn-soft" href="appointments.html">Appointments</a>
-          <a class="btn btn-outline-secondary btn-soft" href="payments.html">Payments</a>
-          <button class="btn btn-outline-danger btn-soft" onclick="logout()">Logout</button>
-        </div>
-      </div>
+    <div class="mb-4">
+      <h1 class="hero-title mb-2">Customers</h1>
+      <p class="hero-sub mb-0">Manage bridal clients, contact details, city, and personal details.</p>
     </div>
 
     <div class="card card-luxe mb-4">
       <div class="card-body">
-
         <div class="row g-3 align-items-end">
-          <div class="col-md-6">
-            <input id="searchInput" class="form-control" placeholder="Search customers..." />
+          <div class="col-lg-6">
+            <label class="label-soft">Search (name / city / phone / email)</label>
+            <input id="searchInput" class="form-control" placeholder="Search..." />
           </div>
 
-          <div class="col-md-3 d-grid">
+          <div class="col-lg-3 d-grid">
             <button id="searchBtn" class="btn btn-primary">Search</button>
           </div>
 
-          <div class="col-md-3 d-grid">
+          <div class="col-lg-3 d-grid">
             <button id="resetBtn" class="btn btn-outline-secondary">Reset</button>
           </div>
         </div>
 
         <div class="mt-3 small-muted">
-          API: <span id="apiUrlText"></span>
+          API: <span id="apiUrlText">/api/customers</span>
         </div>
-
       </div>
     </div>
 
     <div class="card card-luxe mb-4">
       <div class="card-header">Customer Details</div>
       <div class="card-body">
-
         <form id="customerForm" class="row g-3">
-          <input type="hidden" id="customer_id">
+          <input type="hidden" id="customer_id" />
+
+          <div class="col-md-4">
+            <label class="label-soft">First Name *</label>
+            <input id="first_name" class="form-control" required />
+          </div>
+
+          <div class="col-md-4">
+            <label class="label-soft">Last Name *</label>
+            <input id="last_name" class="form-control" required />
+          </div>
+
+          <div class="col-md-4">
+            <label class="label-soft">City</label>
+            <input id="city" class="form-control" />
+          </div>
 
           <div class="col-md-6">
-            <input id="first_name" class="form-control" placeholder="First Name" required />
+            <label class="label-soft">Phone *</label>
+            <input id="phone" class="form-control" required />
           </div>
 
           <div class="col-md-6">
-            <input id="last_name" class="form-control" placeholder="Last Name" required />
-          </div>
-
-          <div class="col-md-4">
-            <input id="phone" class="form-control" placeholder="Phone" required />
-          </div>
-
-          <div class="col-md-4">
-            <input id="city" class="form-control" placeholder="City" />
-          </div>
-
-          <div class="col-md-4">
-            <input id="email" class="form-control" placeholder="Email" />
+            <label class="label-soft">Email</label>
+            <input id="email" type="email" class="form-control" />
           </div>
 
           <div class="col-md-6 d-grid">
-            <button class="btn btn-primary">Save</button>
+            <button class="btn btn-primary" type="submit">Save</button>
           </div>
 
           <div class="col-md-6 d-grid">
-            <button type="button" id="cancelEditBtn" class="btn btn-outline-secondary">Cancel</button>
+            <button id="cancelEditBtn" type="button" class="btn btn-outline-secondary">Cancel Edit</button>
           </div>
-
         </form>
-
       </div>
     </div>
 
     <div class="card card-luxe">
-      <div class="card-header d-flex justify-content-between">
+      <div class="card-header d-flex align-items-center justify-content-between">
         <span>Customers</span>
-        <span id="customersCount">0</span>
+        <span class="badge-soft px-3 py-2 rounded-pill" id="customersCount">0 customers</span>
       </div>
 
       <div class="card-body table-responsive">
@@ -123,6 +114,7 @@
 
   </div>
 
+  <script src="nav.js"></script>
   <script src="customers.js"></script>
 </body>
 
