@@ -1,7 +1,6 @@
 const API_BASE = CONFIG.API_BASE;
 const ENDPOINT = `${API_BASE}/customers`;
 
-// Elements
 const tbody = document.getElementById("customersTbody");
 const searchInput = document.getElementById("searchInput");
 const searchBtn = document.getElementById("searchBtn");
@@ -9,87 +8,16 @@ const resetBtn = document.getElementById("resetBtn");
 const form = document.getElementById("customerForm");
 const cancelEditBtn = document.getElementById("cancelEditBtn");
 const customersCount = document.getElementById("customersCount");
+const apiText = document.getElementById("apiUrlText");
 
-// Form fields
 const idField = document.getElementById("customer_id");
 const firstName = document.getElementById("first_name");
 const lastName = document.getElementById("last_name");
 const city = document.getElementById("city");
 const phone = document.getElementById("phone");
-const eventDate = document.getElementById("event_date");
-const birthDate = document.getElementById("birth_date");
 const email = document.getElementById("email");
 
-// Show endpoint text
-const apiText = document.getElementById("apiUrlText");
 if (apiText) apiText.textContent = ENDPOINT;
-
-async function loadCustomers(search = "") {
-  try {
-    let url = ENDPOINT;
-    if (search) {
-      url += "?search=" + encodeURIComponent(search);
-    }
-
-    const res = await fetch(url);
-    if (!res.ok) {
-      throw new Error(`Failed to load customers (${res.status})`);
-    }
-
-    const customers = await res.json();
-    renderCustomers(customers);
-  } catch (error) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="8" class="text-center text-danger">
-          ${error.message}
-        </td>
-      </tr>
-    `;
-    customersCount.textContent = "0 customers";
-  }
-}
-
-function renderCustomers(customers) {
-  customersCount.textContent = `${customers.length} customers`;
-
-  if (!customers.length) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="8" class="text-center text-muted">
-          No customers found
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
-  tbody.innerHTML = customers.map(c => `
-    <tr>
-      <td>${c.customer_id}</td>
-      <td>${escapeHtml(c.first_name)} ${escapeHtml(c.last_name)}</td>
-      <td>${escapeHtml(c.city || "")}</td>
-      <td>${escapeHtml(c.phone)}</td>
-      <td>${formatDate(c.event_date)}</td>
-      <td>${formatDate(c.birth_date)}</td>
-      <td>${escapeHtml(c.email || "")}</td>
-      <td>
-        <button class="btn btn-sm btn-outline-primary" onclick="editCustomer(${c.customer_id})">
-          Edit
-        </button>
-        <button class="btn btn-sm btn-outline-danger" onclick="deleteCustomer(${c.customer_id})">
-          Delete
-        </button>
-      </td>
-    </tr>
-  `).join("");
-}
-
-function formatDate(date) {
-  if (!date) return "";
-  const d = new Date(date);
-  return d.toLocaleDateString();
-}
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -100,46 +28,52 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
+async function loadCustomers(search = "") {
+  try {
+    let url = ENDPOINT;
+    if (search) {
+      url += "?search=" + encodeURIComponent(search);
+    }
 
-  const data = {
-    first_name: firstName.value.trim(),
-    last_name: lastName.value.trim(),
-    city: city.value.trim(),
-    phone: phone.value.trim(),
-    event_date: eventDate.value,
-    birth_date: birthDate.value,
-    email: email.value.trim()
-  };
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Failed to load customers");
 
-  const id = idField.value;
-  const method = id ? "PUT" : "POST";
-  const url = id ? `${ENDPOINT}/${id}` : ENDPOINT;
+    const data = await res.json();
+    renderCustomers(data);
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" class="text-danger text-center">${err.message}</td></tr>`;
+    customersCount.textContent = "0";
+  }
+}
 
-  const res = await fetch(url, {
-    method,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  });
+function renderCustomers(rows) {
+  customersCount.textContent = `${rows.length} customers`;
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => null);
-    alert(err?.message || "Failed to save customer");
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No customers found</td></tr>`;
     return;
   }
 
-  clearForm();
-  loadCustomers(searchInput.value);
-});
+  tbody.innerHTML = rows.map(c => `
+    <tr>
+      <td>${c.customer_id}</td>
+      <td>${escapeHtml(c.first_name)} ${escapeHtml(c.last_name)}</td>
+      <td>${escapeHtml(c.phone)}</td>
+      <td>${escapeHtml(c.city || "")}</td>
+      <td>${escapeHtml(c.email || "")}</td>
+      <td>
+        <button class="btn btn-sm btn-outline-primary" onclick="editCustomer(${c.customer_id})">Edit</button>
+        <button class="btn btn-sm btn-outline-danger" onclick="deleteCustomer(${c.customer_id})">Delete</button>
+        <a class="btn btn-sm btn-outline-secondary" href="orders.html?customer_id=${c.customer_id}">
+          Orders
+        </a>
+      </td>
+    </tr>
+  `).join("");
+}
 
 window.editCustomer = async function (id) {
   const res = await fetch(`${ENDPOINT}/${id}`);
-  if (!res.ok) {
-    alert("Failed to load customer");
-    return;
-  }
-
   const c = await res.json();
 
   idField.value = c.customer_id;
@@ -147,8 +81,6 @@ window.editCustomer = async function (id) {
   lastName.value = c.last_name || "";
   city.value = c.city || "";
   phone.value = c.phone || "";
-  eventDate.value = c.event_date ? c.event_date.slice(0, 10) : "";
-  birthDate.value = c.birth_date ? c.birth_date.slice(0, 10) : "";
   email.value = c.email || "";
 };
 
@@ -167,6 +99,36 @@ window.deleteCustomer = async function (id) {
   loadCustomers(searchInput.value);
 };
 
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const data = {
+    first_name: firstName.value.trim(),
+    last_name: lastName.value.trim(),
+    city: city.value.trim(),
+    phone: phone.value.trim(),
+    email: email.value.trim()
+  };
+
+  const id = idField.value;
+  const method = id ? "PUT" : "POST";
+  const url = id ? `${ENDPOINT}/${id}` : ENDPOINT;
+
+  const res = await fetch(url, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+
+  if (!res.ok) {
+    alert("Failed to save customer");
+    return;
+  }
+
+  clearForm();
+  loadCustomers(searchInput.value);
+});
+
 function clearForm() {
   idField.value = "";
   form.reset();
@@ -181,8 +143,6 @@ resetBtn.addEventListener("click", () => {
   loadCustomers();
 });
 
-cancelEditBtn.addEventListener("click", () => {
-  clearForm();
-});
+cancelEditBtn.addEventListener("click", clearForm);
 
 loadCustomers();

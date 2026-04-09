@@ -5,53 +5,45 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Aseel L'Atelier - Dresses</title>
+
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="theme.css" rel="stylesheet">
+
   <script src="config.js"></script>
   <script src="auth.js"></script>
-  <script>
-    requireAuth();
-  </script>
+  <script>requireAuth();</script>
 </head>
 
 <body>
   <div class="container py-4 py-md-5">
 
+    <!-- HERO -->
     <div class="hero mb-4">
-      <div class="hero-inner">
-        <div class="hero-grid">
-          <div class="hero-brand-block">
-            <div class="logo-and-copy">
-              <img src="logo.png" alt="Aseel L'Atelier" class="logo-img">
+      <div class="hero-inner d-flex justify-content-between align-items-center">
 
-              <div class="hero-copy">
-                <div class="brand">Aseel L'Atelier</div>
-                <h1 class="hero-title">Dress Inventory</h1>
-                <p class="hero-sub">
-                  Manage the bridal collection, pricing, gallery images, and inventory status.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div class="hero-actions">
-            <a class="btn btn-outline-secondary btn-soft" href="https://layandabbah-telhai.github.io/Aseel-LAtelier/client/customers.html">Customers</a>
-            <a class="btn btn-outline-secondary btn-soft" href="https://layandabbah-telhai.github.io/Aseel-LAtelier/client/orders.html">Orders</a>
-            <a class="btn btn-outline-secondary btn-soft" href="https://layandabbah-telhai.github.io/Aseel-LAtelier/client/appointments.html">Appointments</a>
-            <a class="btn btn-outline-secondary btn-soft" href="https://layandabbah-telhai.github.io/Aseel-LAtelier/client/payments.html">Payments</a>
-            <a class="btn btn-outline-secondary btn-soft" href="https://layandabbah-telhai.github.io/Aseel-LAtelier/client/measurements.html">Measurements</a>
-            <button class="btn btn-outline-danger btn-soft" onclick="logout()">Logout</button>
-          </div>
+        <div>
+          <div class="brand">Aseel L'Atelier</div>
+          <h1 class="hero-title">Dress Inventory</h1>
         </div>
+
+        <div class="hero-actions">
+          <a class="btn btn-outline-secondary btn-soft" href="customers.html">Customers</a>
+          <a class="btn btn-outline-secondary btn-soft" href="orders.html">Orders</a>
+          <a class="btn btn-outline-secondary btn-soft" href="appointments.html">Appointments</a>
+          <a class="btn btn-outline-secondary btn-soft" href="payments.html">Payments</a>
+          <button class="btn btn-outline-danger btn-soft" onclick="logout()">Logout</button>
+        </div>
+
       </div>
     </div>
 
+    <!-- SEARCH -->
     <div class="card card-luxe mb-4">
       <div class="card-body">
+
         <div class="row g-3 align-items-end">
           <div class="col-lg-6">
-            <label class="label-soft">Search (name / size / color / status)</label>
-            <input id="searchInput" class="form-control" placeholder="Search..." />
+            <input id="searchInput" class="form-control" placeholder="Search dresses..." />
           </div>
 
           <div class="col-lg-3 d-grid">
@@ -64,37 +56,37 @@
         </div>
 
         <div class="mt-3 small-muted">
-          API: <span id="apiUrlText">/api/dresses</span>
+          API: <span id="apiUrlText"></span>
         </div>
+
       </div>
     </div>
 
+    <!-- FORM -->
     <div class="card card-luxe mb-4">
       <div class="card-header">Dress Details</div>
       <div class="card-body">
+
         <form id="dressForm" class="row g-3">
+
           <input type="hidden" id="dress_id" />
           <input type="hidden" id="existing_image_urls" />
 
           <div class="col-md-4">
-            <label class="label-soft">Dress Name *</label>
-            <input id="dress_name" class="form-control" required />
+            <input id="dress_name" class="form-control" placeholder="Dress Name" required />
           </div>
 
           <div class="col-md-2">
-            <label class="label-soft">Size</label>
-            <input id="size" class="form-control" />
+            <input id="size" class="form-control" placeholder="Size" />
           </div>
 
           <div class="col-md-3">
-            <label class="label-soft">Color</label>
-            <input id="color" class="form-control" />
+            <input id="color" class="form-control" placeholder="Color" />
           </div>
 
           <div class="col-md-3">
-            <label class="label-soft">Status *</label>
-            <select id="status" class="form-select" required>
-              <option value="Available" selected>Available</option>
+            <select id="status" class="form-select">
+              <option value="Available">Available</option>
               <option value="Rented">Rented</option>
               <option value="Sold">Sold</option>
               <option value="In Repair">In Repair</option>
@@ -103,57 +95,55 @@
           </div>
 
           <div class="col-md-3">
-            <label class="label-soft">Rental Price</label>
-            <input id="rental_price" type="number" step="0.01" class="form-control" />
+            <input id="rental_price" type="number" step="0.01" class="form-control" placeholder="Rental Price" />
           </div>
 
           <div class="col-md-3">
-            <label class="label-soft">Sale Price</label>
-            <input id="sale_price" type="number" step="0.01" class="form-control" />
+            <input id="sale_price" type="number" step="0.01" class="form-control" placeholder="Sale Price" />
           </div>
 
           <div class="col-md-6">
-            <label class="label-soft">Dress Images</label>
-            <input id="image_file" type="file" accept="image/*" multiple class="form-control" />
+            <input id="image_file" type="file" multiple class="form-control" />
           </div>
 
           <div class="col-md-12">
-            <label class="label-soft">Notes</label>
-            <input id="notes" class="form-control" />
+            <input id="notes" class="form-control" placeholder="Notes" />
           </div>
 
           <div class="col-12">
-            <label class="label-soft">Gallery Preview</label>
-            <div id="image_preview_gallery" class="gallery-preview-grid"></div>
+            <div id="image_preview_gallery"></div>
           </div>
 
           <div class="col-md-6 d-grid">
-            <button id="saveBtn" class="btn btn-primary" type="submit">Save</button>
+            <button class="btn btn-primary">Save</button>
           </div>
 
           <div class="col-md-6 d-grid">
-            <button id="cancelEditBtn" type="button" class="btn btn-outline-secondary">Cancel Edit</button>
+            <button type="button" id="cancelEditBtn" class="btn btn-outline-secondary">Cancel</button>
           </div>
 
           <div class="col-12">
-            <div id="dressMessage" class="small-muted mb-2"></div>
+            <div id="dressMessage"></div>
           </div>
+
         </form>
+
       </div>
     </div>
 
+    <!-- TABLE -->
     <div class="card card-luxe">
-      <div class="card-header d-flex align-items-center justify-content-between">
-        <span>Dress Registry</span>
-        <span class="badge-soft px-3 py-2 rounded-pill" id="dressesCount">0 dresses</span>
+      <div class="card-header d-flex justify-content-between">
+        <span>Dresses</span>
+        <span id="dressesCount">0</span>
       </div>
 
       <div class="card-body table-responsive">
-        <table class="table align-middle">
+        <table class="table">
           <thead>
             <tr>
               <th>#</th>
-              <th>Gallery</th>
+              <th>Image</th>
               <th>Name</th>
               <th>Size</th>
               <th>Color</th>
@@ -161,7 +151,7 @@
               <th>Rental</th>
               <th>Sale</th>
               <th>Notes</th>
-              <th style="width:180px;">Actions</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody id="dressesTbody"></tbody>

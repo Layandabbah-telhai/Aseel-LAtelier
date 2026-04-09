@@ -5,173 +5,138 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Aseel L'Atelier - Seamstresses</title>
+
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="theme.css" rel="stylesheet">
+
   <script src="config.js"></script>
   <script src="auth.js"></script>
-  <script>
-    requireAuth();
-  </script>
+  <script>requireAuth();</script>
 </head>
 
 <body>
   <div class="container py-4 py-md-5">
 
+    <!-- HERO -->
     <div class="hero mb-4">
-      <div class="hero-inner">
-        <div class="hero-grid">
-          <div class="hero-brand-block">
-            <div class="logo-and-copy">
-              <img src="logo.png" alt="Aseel L'Atelier" class="logo-img">
+      <div class="hero-inner d-flex justify-content-between align-items-center">
 
-              <div class="hero-copy">
-                <div class="brand">Aseel L'Atelier</div>
-                <h1 class="hero-title">Seamstresses</h1>
-                <p class="hero-sub">
-                  Manage seamstress registry and assign seamstresses to all orders or one selected order.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div class="hero-actions">
-            <a class="btn btn-outline-secondary btn-soft" href="customers.html">Customers</a>
-            <a class="btn btn-outline-secondary btn-soft" href="dresses.html">Dresses</a>
-            <a class="btn btn-outline-secondary btn-soft" href="orders.html">Orders</a>
-            <a class="btn btn-outline-secondary btn-soft" href="appointments.html">Appointments</a>
-            <a class="btn btn-outline-secondary btn-soft" href="payments.html">Payments</a>
-            <a class="btn btn-outline-secondary btn-soft" href="measurements.html">Measurements</a>
-            <button class="btn btn-outline-danger btn-soft" onclick="logout()">Logout</button>
-          </div>
+        <div>
+          <div class="brand">Aseel L'Atelier</div>
+          <h1 class="hero-title">Seamstresses & Assignments</h1>
         </div>
+
+        <div class="hero-actions">
+          <a class="btn btn-outline-secondary btn-soft" href="customers.html">Customers</a>
+          <a class="btn btn-outline-secondary btn-soft" href="orders.html">Orders</a>
+          <a class="btn btn-outline-secondary btn-soft" href="appointments.html">Appointments</a>
+          <a class="btn btn-outline-secondary btn-soft" href="payments.html">Payments</a>
+          <button class="btn btn-outline-danger btn-soft" onclick="logout()">Logout</button>
+        </div>
+
       </div>
     </div>
 
+    <!-- ORDER SUMMARY -->
     <div class="card card-luxe mb-4">
-      <div class="card-body">
-        <div class="small-muted">
-          APIs:
-          <span id="apiTextRegistry">/api/seamstresses</span>
-          |
-          <span id="apiTextAssignments">/api/seamstresses/assignments</span>
-        </div>
-        <div class="mt-3" id="orderSummary"></div>
-      </div>
+      <div class="card-body" id="orderSummary"></div>
     </div>
 
+    <!-- SEAMSTRESS FORM -->
     <div class="card card-luxe mb-4">
-      <div class="card-header">Seamstress Details</div>
+      <div class="card-header">Seamstress</div>
       <div class="card-body">
+
         <form id="seamstressForm" class="row g-3">
-          <input type="hidden" id="seamstress_id" />
+          <input type="hidden" id="seamstress_id">
 
           <div class="col-md-6">
-            <label class="label-soft">Name *</label>
-            <input id="name" class="form-control" required />
+            <input id="name" class="form-control" placeholder="Name" required />
           </div>
 
           <div class="col-md-6">
-            <label class="label-soft">Phone</label>
-            <input id="phone" class="form-control" />
+            <input id="phone" class="form-control" placeholder="Phone" />
           </div>
 
           <div class="col-md-6 d-grid">
-            <button type="submit" class="btn btn-primary">Save Seamstress</button>
+            <button class="btn btn-primary">Save</button>
           </div>
 
           <div class="col-md-6 d-grid">
-            <button id="cancelSeamstressEditBtn" type="button" class="btn btn-outline-secondary">Cancel Edit</button>
+            <button type="button" id="cancelSeamstressEditBtn" class="btn btn-outline-secondary">Cancel</button>
           </div>
+
         </form>
+
       </div>
     </div>
 
+    <!-- ASSIGNMENT FORM -->
     <div class="card card-luxe mb-4">
-      <div class="card-header d-flex align-items-center justify-content-between">
-        <span>Seamstress Registry</span>
-        <span class="badge-soft px-3 py-2 rounded-pill" id="seamstressesCount">0 seamstresses</span>
-      </div>
-
-      <div class="card-body table-responsive">
-        <table class="table align-middle">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Name</th>
-              <th>Phone</th>
-              <th style="width:180px;">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="seamstressesTbody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card card-luxe mb-4">
-      <div class="card-header">Order Seamstress Assignment</div>
+      <div class="card-header">Assignment</div>
       <div class="card-body">
+
         <form id="assignmentForm" class="row g-3">
-          <input type="hidden" id="assignment_id" />
+
+          <input type="hidden" id="assignment_id">
 
           <div class="col-md-6">
-            <label class="label-soft">Order *</label>
+            <label>Order</label>
             <select id="order_id" class="form-select" required></select>
           </div>
 
           <div class="col-md-6">
-            <label class="label-soft">Seamstress *</label>
+            <label>Seamstress</label>
             <select id="assigned_seamstress_id" class="form-select" required></select>
           </div>
 
           <div class="col-md-6">
-            <label class="label-soft">Task Type</label>
             <select id="task_type" class="form-select">
-              <option value="">Select...</option>
-              <option value="Special Tailoring">Special Tailoring</option>
-              <option value="Regular Tailoring">Regular Tailoring</option>
-              <option value="Alteration">Alteration</option>
-              <option value="Finishing">Finishing</option>
-              <option value="First Work">First Work</option>
-              <option value="Fitting Update">Fitting Update</option>
-              <option value="Final Adjustment">Final Adjustment</option>
+              <option value="">Select task</option>
+              <option>Special Tailoring</option>
+              <option>Regular Tailoring</option>
+              <option>Alteration</option>
+              <option>Fitting Update</option>
+              <option>Final Adjustment</option>
             </select>
           </div>
 
           <div class="col-md-6">
-            <label class="label-soft">Notes</label>
-            <input id="assignment_notes" class="form-control" placeholder="e.g. after fitting, tighten waist / shorten hem" />
+            <input id="assignment_notes" class="form-control" placeholder="Notes" />
           </div>
 
           <div class="col-md-6 d-grid">
-            <button type="submit" class="btn btn-primary">Save Assignment</button>
+            <button class="btn btn-primary">Save</button>
           </div>
 
           <div class="col-md-6 d-grid">
-            <button id="cancelAssignmentEditBtn" type="button" class="btn btn-outline-secondary">Cancel Edit</button>
+            <button type="button" id="cancelAssignmentEditBtn" class="btn btn-outline-secondary">Cancel</button>
           </div>
+
         </form>
+
       </div>
     </div>
 
+    <!-- TABLE -->
     <div class="card card-luxe">
-      <div class="card-header d-flex align-items-center justify-content-between">
-        <span>Seamstress Assignments</span>
-        <span class="badge-soft px-3 py-2 rounded-pill" id="assignmentsCount">0 assignments</span>
+      <div class="card-header d-flex justify-content-between">
+        <span>Assignments</span>
+        <span id="assignmentsCount">0</span>
       </div>
 
       <div class="card-body table-responsive">
-        <table class="table align-middle">
+        <table class="table">
           <thead>
             <tr>
               <th>#</th>
               <th>Order</th>
               <th>Customer</th>
               <th>Dress</th>
-              <th>Occasion</th>
               <th>Seamstress</th>
               <th>Task</th>
               <th>Notes</th>
-              <th style="width:180px;">Actions</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody id="assignmentsTbody"></tbody>
