@@ -29,7 +29,7 @@ if (apiText) apiText.textContent = ENDPOINT;
 function authHeaders(json = false) {
   return {
     ...(json ? { "Content-Type": "application/json" } : {}),
-    "Authorization": "Bearer " + localStorage.getItem("aseel_token")
+    Authorization: "Bearer " + localStorage.getItem("aseel_token")
   };
 }
 
@@ -37,30 +37,34 @@ function escapeHtml(v) {
   return String(v ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
-
-/* LOAD DROPDOWNS */
 
 async function loadCustomers() {
   const res = await fetch(CUSTOMERS_ENDPOINT, { headers: authHeaders() });
   customersCache = await res.json();
 
-  customerId.innerHTML = customersCache.map(c =>
-    `<option value="${c.customer_id}">${escapeHtml(c.first_name)} ${escapeHtml(c.last_name)}</option>`
-  ).join("");
+  customerId.innerHTML = `
+    <option value="">Select customer...</option>
+    ${customersCache.map(c =>
+      `<option value="${c.customer_id}">${escapeHtml(c.first_name)} ${escapeHtml(c.last_name)}</option>`
+    ).join("")}
+  `;
 }
 
 async function loadDresses() {
   const res = await fetch(DRESSES_ENDPOINT, { headers: authHeaders() });
   dressesCache = await res.json();
 
-  dressId.innerHTML = dressesCache.map(d =>
-    `<option value="${d.dress_id}">${escapeHtml(d.dress_name)}</option>`
-  ).join("");
+  dressId.innerHTML = `
+    <option value="">Select dress...</option>
+    ${dressesCache.map(d =>
+      `<option value="${d.dress_id}">${escapeHtml(d.dress_name)}</option>`
+    ).join("")}
+  `;
 }
-
-/* LOAD ORDERS */
 
 async function loadOrders(search = "") {
   let url = ENDPOINT;
@@ -69,7 +73,7 @@ async function loadOrders(search = "") {
   const res = await fetch(url, { headers: authHeaders() });
   const data = await res.json();
 
-  renderOrders(data);
+  renderOrders(Array.isArray(data) ? data : []);
 }
 
 function renderOrders(rows) {
@@ -83,11 +87,11 @@ function renderOrders(rows) {
   tbody.innerHTML = rows.map(o => `
     <tr>
       <td>${o.order_id}</td>
-      <td>${escapeHtml(o.first_name)} ${escapeHtml(o.last_name)}</td>
+      <td>${escapeHtml(o.first_name || "")} ${escapeHtml(o.last_name || "")}</td>
       <td>${escapeHtml(o.dress_name || "")}</td>
       <td>${escapeHtml(o.occasion_type || "")}</td>
-      <td>${o.order_date ? o.order_date.slice(0,10) : ""}</td>
-      <td>${escapeHtml(o.status)}</td>
+      <td>${o.order_date ? String(o.order_date).slice(0, 10) : ""}</td>
+      <td>${escapeHtml(o.status || "")}</td>
       <td>
         <button class="btn btn-sm btn-outline-primary" onclick="editOrder(${o.order_id})">Edit</button>
         <button class="btn btn-sm btn-outline-danger" onclick="deleteOrder(${o.order_id})">Delete</button>
@@ -101,18 +105,16 @@ function renderOrders(rows) {
   `).join("");
 }
 
-/* CRUD */
-
 window.editOrder = async function (id) {
   const res = await fetch(`${ENDPOINT}/${id}`, { headers: authHeaders() });
   const o = await res.json();
 
-  orderId.value = o.order_id;
-  customerId.value = o.customer_id;
-  dressId.value = o.dress_id;
+  orderId.value = o.order_id || "";
+  customerId.value = o.customer_id || "";
+  dressId.value = o.dress_id || "";
   occasion.value = o.occasion_type || "";
-  orderDate.value = o.order_date ? o.order_date.slice(0,10) : "";
-  statusField.value = o.status;
+  orderDate.value = o.order_date ? String(o.order_date).slice(0, 10) : "";
+  statusField.value = o.status || "In Progress";
 };
 
 window.deleteOrder = async function (id) {
@@ -128,11 +130,21 @@ window.deleteOrder = async function (id) {
     return;
   }
 
-  loadOrders();
+  loadOrders(searchInput.value.trim());
 };
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
+
+  if (!customerId.value) {
+    alert("Please select a customer");
+    return;
+  }
+
+  if (!dressId.value) {
+    alert("Please select a dress");
+    return;
+  }
 
   const data = {
     customer_id: customerId.value,
@@ -152,21 +164,24 @@ form.addEventListener("submit", async (e) => {
     body: JSON.stringify(data)
   });
 
+  const payload = await res.json().catch(() => null);
+
   if (!res.ok) {
-    alert("Save failed");
+    alert(payload?.message || "Save failed");
     return;
   }
 
   clearForm();
-  loadOrders();
+  loadOrders(searchInput.value.trim());
 });
-
-/* HELPERS */
 
 function clearForm() {
   orderId.value = "";
   form.reset();
   statusField.value = "In Progress";
+  occasion.value = "";
+  customerId.value = "";
+  dressId.value = "";
 }
 
 searchBtn.addEventListener("click", () => {
@@ -179,8 +194,6 @@ resetBtn.addEventListener("click", () => {
 });
 
 cancelEditBtn.addEventListener("click", clearForm);
-
-/* INIT */
 
 (async function () {
   await loadCustomers();

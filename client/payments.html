@@ -11,98 +11,91 @@
 
   <script src="config.js"></script>
   <script src="auth.js"></script>
-  <script>requireAuth();</script>
+  <script>
+    requireAuth();
+  </script>
 </head>
 
 <body>
   <div class="container py-4 py-md-5">
 
-    <!-- HERO -->
-    <div class="hero mb-4">
-      <div class="hero-inner d-flex justify-content-between align-items-center">
+    <div id="sharedNav"></div>
 
-        <div>
-          <div class="brand">Aseel L'Atelier</div>
-          <h1 class="hero-title">Payments</h1>
+    <div class="mb-4">
+      <h1 class="hero-title mb-2">Payments</h1>
+      <p class="hero-sub mb-0">Manage all payments or focus on one order only.</p>
+    </div>
+
+    <div class="card card-luxe mb-4">
+      <div class="card-body">
+        <div class="small-muted">
+          API:
+          <span id="apiUrlText"></span>
         </div>
-
-        <div class="hero-actions">
-          <a class="btn btn-outline-secondary btn-soft" href="customers.html">Customers</a>
-          <a class="btn btn-outline-secondary btn-soft" href="dresses.html">Dresses</a>
-          <a class="btn btn-outline-secondary btn-soft" href="orders.html">Orders</a>
-          <a class="btn btn-outline-secondary btn-soft" href="appointments.html">Appointments</a>
-          <button class="btn btn-outline-danger btn-soft" onclick="logout()">Logout</button>
-        </div>
-
+        <div class="mt-3" id="orderSummary"></div>
       </div>
     </div>
 
-    <!-- ORDER SUMMARY -->
-    <div class="card card-luxe mb-4">
-      <div class="card-body" id="orderSummary"></div>
-    </div>
-
-    <!-- FORM -->
     <div class="card card-luxe mb-4">
       <div class="card-header">Payment Details</div>
       <div class="card-body">
 
         <form id="paymentForm" class="row g-3">
-
           <input type="hidden" id="payment_id" />
 
           <div class="col-md-6">
-            <label>Order</label>
+            <label class="label-soft">Order</label>
             <select id="order_id" class="form-select" required></select>
           </div>
 
           <div class="col-md-3">
+            <label class="label-soft">Amount</label>
             <input id="amount" type="number" step="0.01" class="form-control" placeholder="Amount" required />
           </div>
 
           <div class="col-md-3">
+            <label class="label-soft">Payment Date</label>
             <input id="payment_date" type="date" class="form-control" />
           </div>
 
           <div class="col-md-6">
-            <label>Payment Method</label>
+            <label class="label-soft">Payment Method</label>
             <select id="payment_method" class="form-select">
               <option value="">Select method</option>
-              <option>Cash</option>
-              <option>Credit Card</option>
-              <option>Debit Card</option>
-              <option>Bank Transfer</option>
-              <option>Check</option>
-              <option>Other</option>
+              <option value="Cash">Cash</option>
+              <option value="Credit Card">Credit Card</option>
+              <option value="Debit Card">Debit Card</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+              <option value="Check">Check</option>
+              <option value="Other">Other</option>
             </select>
           </div>
 
           <div class="col-md-6">
+            <label class="label-soft">Notes</label>
             <input id="notes" class="form-control" placeholder="Notes" />
           </div>
 
           <div class="col-md-6 d-grid">
-            <button class="btn btn-primary">Save</button>
+            <button type="submit" class="btn btn-primary">Save</button>
           </div>
 
           <div class="col-md-6 d-grid">
             <button type="button" id="cancelEditBtn" class="btn btn-outline-secondary">Cancel</button>
           </div>
-
         </form>
 
       </div>
     </div>
 
-    <!-- TABLE -->
     <div class="card card-luxe">
-      <div class="card-header d-flex justify-content-between">
+      <div class="card-header d-flex justify-content-between align-items-center">
         <span>Payments</span>
-        <span id="paymentsCount">0</span>
+        <span class="badge-soft px-3 py-2 rounded-pill" id="paymentsCount">0 payments</span>
       </div>
 
       <div class="card-body table-responsive">
-        <table class="table">
+        <table class="table align-middle">
           <thead>
             <tr>
               <th>#</th>
@@ -112,7 +105,7 @@
               <th>Date</th>
               <th>Method</th>
               <th>Notes</th>
-              <th>Actions</th>
+              <th style="width:180px;">Actions</th>
             </tr>
           </thead>
           <tbody id="paymentsTbody"></tbody>
@@ -122,6 +115,7 @@
 
   </div>
 
+  <script src="nav.js"></script>
   <script src="payments.js"></script>
 </body>
 

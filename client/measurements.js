@@ -35,6 +35,13 @@ if (apiText) {
     : MEASUREMENTS_ENDPOINT;
 }
 
+function authHeaders(json = false) {
+  return {
+    ...(json ? { "Content-Type": "application/json" } : {}),
+    Authorization: "Bearer " + localStorage.getItem("aseel_token"),
+  };
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -49,19 +56,15 @@ function formatNumber(value) {
   return Number(value).toFixed(2);
 }
 
-function getCustomerName(order) {
-  if (order.first_name || order.last_name) {
-    return `${escapeHtml(order.first_name || "")} ${escapeHtml(order.last_name || "")}`.trim();
-  }
-  return escapeHtml(order.customer_name || "");
-}
-
 function renderCustomerOptions() {
-  customerId.innerHTML = customersCache.map((c) => `
-    <option value="${c.customer_id}">
-      ${escapeHtml(c.first_name)} ${escapeHtml(c.last_name)} (${escapeHtml(c.phone || "")})
-    </option>
-  `).join("");
+  customerId.innerHTML = `
+    <option value="">Select customer...</option>
+    ${customersCache.map((c) => `
+      <option value="${c.customer_id}">
+        ${escapeHtml(c.first_name)} ${escapeHtml(c.last_name)} (${escapeHtml(c.phone || "")})
+      </option>
+    `).join("")}
+  `;
 }
 
 function renderOrderOptions() {
@@ -71,11 +74,14 @@ function renderOrderOptions() {
     ? ordersCache.filter((o) => String(o.customer_id) === String(selectedCustomerId))
     : ordersCache;
 
-  orderId.innerHTML = filteredOrders.map((o) => `
-    <option value="${o.order_id}">
-      #${o.order_id} - ${escapeHtml(o.dress_name || "")} ${o.occasion_type ? `(${escapeHtml(o.occasion_type)})` : ""}
-    </option>
-  `).join("");
+  orderId.innerHTML = `
+    <option value="">Select order...</option>
+    ${filteredOrders.map((o) => `
+      <option value="${o.order_id}">
+        #${o.order_id} - ${escapeHtml(o.dress_name || "")}${o.occasion_type ? ` (${escapeHtml(o.occasion_type)})` : ""}
+      </option>
+    `).join("")}
+  `;
 
   if (urlOrderId) {
     orderId.value = urlOrderId;
@@ -83,14 +89,18 @@ function renderOrderOptions() {
 }
 
 async function loadCustomers() {
-  const res = await fetch(CUSTOMERS_ENDPOINT);
+  const res = await fetch(CUSTOMERS_ENDPOINT, {
+    headers: authHeaders(),
+  });
   if (!res.ok) throw new Error("Failed to load customers");
   customersCache = await res.json();
   renderCustomerOptions();
 }
 
 async function loadOrders() {
-  const res = await fetch(ORDERS_ENDPOINT);
+  const res = await fetch(ORDERS_ENDPOINT, {
+    headers: authHeaders(),
+  });
   if (!res.ok) throw new Error("Failed to load orders");
   ordersCache = await res.json();
 
@@ -102,9 +112,10 @@ async function loadOrders() {
   }
 
   renderOrderOptions();
+  renderOrderSummary();
 }
 
-async function loadSummary() {
+function renderOrderSummary() {
   if (urlOrderId) {
     const order = ordersCache.find((o) => String(o.order_id) === String(urlOrderId));
 
@@ -115,7 +126,7 @@ async function loadSummary() {
 
     orderSummary.innerHTML = `
       <div><strong>Selected Order #${order.order_id}</strong></div>
-      <div>Customer: ${getCustomerName(order)}</div>
+      <div>Customer: ${escapeHtml(order.first_name || "")} ${escapeHtml(order.last_name || "")}</div>
       <div>Dress: ${escapeHtml(order.dress_name || "")}</div>
       <div>Occasion: ${escapeHtml(order.occasion_type || "")}</div>
     `;
@@ -124,46 +135,39 @@ async function loadSummary() {
 
   orderSummary.innerHTML = `
     <div><strong>All Measurements</strong></div>
-    <div>Select any order in the form to add a measurement, or open this page from an order to focus on one order only.</div>
+    <div>You can add measurements for any order, or open this page from an order to focus on one order only.</div>
   `;
-}
-
-async function loadMeasurementsForOrder(orderIdValue) {
-  const res = await fetch(`${MEASUREMENTS_ENDPOINT}?order_id=${encodeURIComponent(orderIdValue)}`);
-  if (!res.ok) {
-    throw new Error(`Failed to load measurements (${res.status})`);
-  }
-
-  const rows = await res.json();
-  return Array.isArray(rows) ? rows : [];
 }
 
 async function loadMeasurements() {
   try {
-    let rows = [];
-
+    let url = MEASUREMENTS_ENDPOINT;
     if (urlOrderId) {
-      rows = await loadMeasurementsForOrder(urlOrderId);
-    } else {
-      const allMeasurements = await Promise.all(
-        ordersCache.map((order) => loadMeasurementsForOrder(order.order_id))
-      );
-      rows = allMeasurements.flat();
+      url += `?order_id=${encodeURIComponent(urlOrderId)}`;
     }
 
-    renderMeasurements(rows);
+    const res = await fetch(url, {
+      headers: authHeaders(),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to load measurements (${res.status})`);
+    }
+
+    const rows = await res.json();
+    renderMeasurements(Array.isArray(rows) ? rows : []);
   } catch (error) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="14" class="text-center text-danger">${error.message}</td>
+        <td colspan="14" class="text-center text-danger">${escapeHtml(error.message)}</td>
       </tr>
     `;
-    measurementsCount.textContent = "0 measurements";
+    measurementsCount.textContent = "0";
   }
 }
 
 function renderMeasurements(rows) {
-  measurementsCount.textContent = `${rows.length} measurements`;
+  measurementsCount.textContent = `${rows.length}`;
 
   if (!rows.length) {
     tbody.innerHTML = `
@@ -176,7 +180,7 @@ function renderMeasurements(rows) {
 
   tbody.innerHTML = rows.map((m) => `
     <tr>
-      <td>${m.order_id}</td>
+      <td>${m.measurement_id}</td>
       <td><a href="measurements.html?order_id=${m.order_id}">#${m.order_id}</a></td>
       <td>${escapeHtml(m.first_name || "")} ${escapeHtml(m.last_name || "")}</td>
       <td>${escapeHtml(m.dress_name || "")}</td>
@@ -198,7 +202,10 @@ function renderMeasurements(rows) {
 }
 
 window.editMeasurement = async function (id) {
-  const res = await fetch(`${MEASUREMENTS_ENDPOINT}/${id}`);
+  const res = await fetch(`${MEASUREMENTS_ENDPOINT}/${id}`, {
+    headers: authHeaders(),
+  });
+
   if (!res.ok) {
     alert("Failed to load measurement");
     return;
@@ -207,9 +214,9 @@ window.editMeasurement = async function (id) {
   const m = await res.json();
 
   measurementId.value = m.measurement_id;
-  customerId.value = m.customer_id;
+  customerId.value = m.customer_id || "";
   renderOrderOptions();
-  orderId.value = m.order_id;
+  orderId.value = m.order_id || "";
   tailoringType.value = m.tailoring_type || "";
   bust.value = m.bust ?? "";
   waist.value = m.waist ?? "";
@@ -225,18 +232,32 @@ window.deleteMeasurement = async function (id) {
 
   const res = await fetch(`${MEASUREMENTS_ENDPOINT}/${id}`, {
     method: "DELETE",
+    headers: authHeaders(),
   });
 
+  const payload = await res.json().catch(() => null);
+
   if (!res.ok) {
-    alert("Failed to delete measurement");
+    alert(payload?.message || "Failed to delete measurement");
     return;
   }
 
+  clearForm();
   await loadMeasurements();
 };
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
+
+  if (!customerId.value) {
+    alert("Please select a customer");
+    return;
+  }
+
+  if (!orderId.value) {
+    alert("Please select an order");
+    return;
+  }
 
   const data = {
     customer_id: customerId.value,
@@ -257,13 +278,14 @@ form.addEventListener("submit", async (e) => {
 
   const res = await fetch(url, {
     method,
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(true),
     body: JSON.stringify(data),
   });
 
+  const payload = await res.json().catch(() => null);
+
   if (!res.ok) {
-    const err = await res.json().catch(() => null);
-    alert(err?.message || "Failed to save measurement");
+    alert(payload?.message || "Failed to save measurement");
     return;
   }
 
@@ -274,6 +296,7 @@ form.addEventListener("submit", async (e) => {
 function clearForm() {
   measurementId.value = "";
   form.reset();
+  tailoringType.value = "";
 
   if (urlOrderId) {
     const selectedOrder = ordersCache.find((o) => String(o.order_id) === String(urlOrderId));
@@ -283,20 +306,22 @@ function clearForm() {
       orderId.value = selectedOrder.order_id;
     }
   } else {
+    customerId.value = "";
     renderOrderOptions();
+    orderId.value = "";
   }
 }
 
-customerId.addEventListener("change", () => {
-  renderOrderOptions();
-});
-
+customerId.addEventListener("change", renderOrderOptions);
 cancelEditBtn.addEventListener("click", clearForm);
 
 (async function init() {
-  await loadCustomers();
-  await loadOrders();
-  await loadSummary();
-  clearForm();
-  await loadMeasurements();
+  try {
+    await loadCustomers();
+    await loadOrders();
+    clearForm();
+    await loadMeasurements();
+  } catch (error) {
+    orderSummary.innerHTML = `<div class="text-danger">${escapeHtml(error.message)}</div>`;
+  }
 })();

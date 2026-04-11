@@ -46,21 +46,60 @@
             <select id="order_id" class="form-select"></select>
           </div>
 
-          <div class="col-md-3"><input id="tailoring_type" class="form-control" placeholder="Tailoring Type" /></div>
-          <div class="col-md-3"><input id="bust" type="number" class="form-control" placeholder="Bust" /></div>
-          <div class="col-md-3"><input id="waist" type="number" class="form-control" placeholder="Waist" /></div>
-          <div class="col-md-3"><input id="hips" type="number" class="form-control" placeholder="Hips" /></div>
+          <div class="col-md-4">
+            <label class="label-soft">Tailoring Type</label>
+            <select id="tailoring_type" class="form-select">
+              <option value="">Select tailoring type</option>
+              <option value="Tightening">Tightening</option>
+              <option value="Widening">Widening</option>
+              <option value="Shortening">Shortening</option>
+              <option value="Lengthening">Lengthening</option>
+              <option value="Sleeve Adjustment">Sleeve Adjustment</option>
+              <option value="Shoulder Adjustment">Shoulder Adjustment</option>
+              <option value="Bust Adjustment">Bust Adjustment</option>
+              <option value="Waist Adjustment">Waist Adjustment</option>
+              <option value="Hip Adjustment">Hip Adjustment</option>
+              <option value="General Alteration">General Alteration</option>
+            </select>
+          </div>
 
-          <div class="col-md-4"><input id="shoulder" type="number" class="form-control" placeholder="Shoulder" /></div>
-          <div class="col-md-4"><input id="sleeve_length" type="number" class="form-control" placeholder="Sleeve" /></div>
-          <div class="col-md-4"><input id="dress_length" type="number" class="form-control" placeholder="Length" /></div>
+          <div class="col-md-4">
+            <label class="label-soft">Bust</label>
+            <input id="bust" type="number" step="0.01" class="form-control" placeholder="Bust" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="label-soft">Waist</label>
+            <input id="waist" type="number" step="0.01" class="form-control" placeholder="Waist" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="label-soft">Hips</label>
+            <input id="hips" type="number" step="0.01" class="form-control" placeholder="Hips" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="label-soft">Shoulder</label>
+            <input id="shoulder" type="number" step="0.01" class="form-control" placeholder="Shoulder" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="label-soft">Sleeve Length</label>
+            <input id="sleeve_length" type="number" step="0.01" class="form-control" placeholder="Sleeve" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="label-soft">Dress Length</label>
+            <input id="dress_length" type="number" step="0.01" class="form-control" placeholder="Length" />
+          </div>
 
           <div class="col-12">
+            <label class="label-soft">Notes</label>
             <textarea id="notes" class="form-control" placeholder="Notes"></textarea>
           </div>
 
           <div class="col-md-6 d-grid">
-            <button class="btn btn-primary">Save</button>
+            <button class="btn btn-primary" type="submit">Save</button>
           </div>
 
           <div class="col-md-6 d-grid">

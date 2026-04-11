@@ -1,9 +1,10 @@
 const API_BASE = CONFIG.API_BASE;
-const ENDPOINT = `${API_BASE}/payments`;
 const ORDERS_ENDPOINT = `${API_BASE}/orders`;
 
-const tbody = document.getElementById("paymentsTbody");
-const paymentsCount = document.getElementById("paymentsCount");
+const params = new URLSearchParams(window.location.search);
+const urlOrderId = params.get("order_id");
+
+const apiText = document.getElementById("apiUrlText");
 const orderSummary = document.getElementById("orderSummary");
 
 const form = document.getElementById("paymentForm");
@@ -16,161 +17,246 @@ const paymentDate = document.getElementById("payment_date");
 const paymentMethod = document.getElementById("payment_method");
 const notes = document.getElementById("notes");
 
-const params = new URLSearchParams(window.location.search);
-const urlOrderId = params.get("order_id");
+const paymentsTbody = document.getElementById("paymentsTbody");
+const paymentsCount = document.getElementById("paymentsCount");
 
 let ordersCache = [];
+let paymentsCache = [];
+
+if (apiText) {
+  apiText.textContent = urlOrderId
+    ? `${ORDERS_ENDPOINT}/${urlOrderId}/payments`
+    : `${ORDERS_ENDPOINT}/:order_id/payments`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
 
 function authHeaders(json = false) {
   return {
     ...(json ? { "Content-Type": "application/json" } : {}),
-    "Authorization": "Bearer " + localStorage.getItem("aseel_token")
+    Authorization: "Bearer " + localStorage.getItem("aseel_token"),
   };
 }
 
-function escapeHtml(v) {
-  return String(v ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
+function formatDate(value) {
+  if (!value) return "";
+  return String(value).slice(0, 10);
 }
 
-/* LOAD ORDERS */
-
-async function loadOrders() {
-  const res = await fetch(ORDERS_ENDPOINT, { headers: authHeaders() });
-  ordersCache = await res.json();
-
-  orderId.innerHTML = ordersCache.map(o =>
-    `<option value="${o.order_id}">#${o.order_id} - ${escapeHtml(o.first_name)} ${escapeHtml(o.last_name)}</option>`
-  ).join("");
-
-  if (urlOrderId) {
-    orderId.value = urlOrderId;
-    renderOrderSummary();
-  }
+function formatMoney(value) {
+  return Number(value || 0).toFixed(2);
 }
-
-/* ORDER SUMMARY */
 
 function renderOrderSummary() {
   if (!urlOrderId) {
-    orderSummary.innerHTML = "<strong>All Payments</strong>";
+    orderSummary.innerHTML = `
+      <div><strong>All Payments</strong></div>
+      <div>You can add a payment to any order, or open this page from one order only.</div>
+    `;
     return;
   }
 
-  const order = ordersCache.find(o => String(o.order_id) === String(urlOrderId));
+  const order = ordersCache.find((o) => String(o.order_id) === String(urlOrderId));
 
-  if (!order) return;
+  if (!order) {
+    orderSummary.innerHTML = `<div class="text-danger">Failed to load selected order.</div>`;
+    return;
+  }
 
   orderSummary.innerHTML = `
-    <div><strong>Order #${order.order_id}</strong></div>
-    <div>${escapeHtml(order.first_name)} ${escapeHtml(order.last_name)}</div>
-    <div>${escapeHtml(order.dress_name || "")}</div>
+    <div><strong>Selected Order #${order.order_id}</strong></div>
+    <div>Customer: ${escapeHtml(order.first_name || "")} ${escapeHtml(order.last_name || "")}</div>
+    <div>Dress: ${escapeHtml(order.dress_name || "")}</div>
+    <div>Occasion: ${escapeHtml(order.occasion_type || "")}</div>
   `;
 }
 
-/* LOAD PAYMENTS */
-
-async function loadPayments() {
-  let url = ENDPOINT;
-
-  if (urlOrderId) {
-    url += `?order_id=${encodeURIComponent(urlOrderId)}`;
+async function loadOrders() {
+  const res = await fetch(ORDERS_ENDPOINT, { headers: authHeaders() });
+  if (!res.ok) {
+    throw new Error("Failed to load orders");
   }
 
-  const res = await fetch(url, { headers: authHeaders() });
-  const data = await res.json();
+  ordersCache = await res.json();
 
-  renderPayments(data);
+  orderId.innerHTML = `
+    <option value="">Select order...</option>
+    ${ordersCache.map((o) => `
+      <option value="${o.order_id}">
+        #${o.order_id} - ${escapeHtml(o.first_name || "")} ${escapeHtml(o.last_name || "")} - ${escapeHtml(o.dress_name || "")}
+      </option>
+    `).join("")}
+  `;
+
+  if (urlOrderId) {
+    orderId.value = urlOrderId;
+  }
+
+  renderOrderSummary();
+}
+
+async function loadPaymentsForOrder(orderIdValue) {
+  const res = await fetch(`${ORDERS_ENDPOINT}/${orderIdValue}/payments`, {
+    headers: authHeaders(),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to load payments for order #${orderIdValue}`);
+  }
+
+  const rows = await res.json();
+
+  return (Array.isArray(rows) ? rows : []).map((row) => ({
+    ...row,
+    _order_id: Number(orderIdValue),
+  }));
+}
+
+async function loadPayments() {
+  try {
+    let rows = [];
+
+    if (urlOrderId) {
+      rows = await loadPaymentsForOrder(urlOrderId);
+    } else {
+      const allRows = await Promise.all(
+        ordersCache.map((o) => loadPaymentsForOrder(o.order_id))
+      );
+      rows = allRows.flat();
+    }
+
+    paymentsCache = rows;
+    renderPayments(rows);
+  } catch (error) {
+    paymentsCache = [];
+    paymentsTbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="text-center text-danger">${escapeHtml(error.message)}</td>
+      </tr>
+    `;
+    paymentsCount.textContent = "0 payments";
+  }
 }
 
 function renderPayments(rows) {
   paymentsCount.textContent = `${rows.length} payments`;
 
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center">No payments</td></tr>`;
+    paymentsTbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="text-center text-muted">No payments found</td>
+      </tr>
+    `;
     return;
   }
 
-  tbody.innerHTML = rows.map(p => `
-    <tr>
-      <td>${p.payment_id}</td>
-      <td><a href="payments.html?order_id=${p.order_id}">#${p.order_id}</a></td>
-      <td>${escapeHtml(p.first_name)} ${escapeHtml(p.last_name)}</td>
-      <td>${Number(p.amount).toFixed(2)}</td>
-      <td>${p.payment_date ? p.payment_date.slice(0,10) : ""}</td>
-      <td>${escapeHtml(p.payment_method || "")}</td>
-      <td>${escapeHtml(p.notes || "")}</td>
-      <td>
-        <button class="btn btn-sm btn-outline-primary" onclick="editPayment(${p.payment_id})">Edit</button>
-        <button class="btn btn-sm btn-outline-danger" onclick="deletePayment(${p.payment_id})">Delete</button>
-      </td>
-    </tr>
-  `).join("");
+  paymentsTbody.innerHTML = rows.map((p) => {
+    const realOrderId = p.order_id || p._order_id;
+
+    return `
+      <tr>
+        <td>${p.payment_id}</td>
+        <td><a href="payments.html?order_id=${realOrderId}">#${realOrderId}</a></td>
+        <td>${escapeHtml(p.first_name || "")} ${escapeHtml(p.last_name || "")}</td>
+        <td>${formatMoney(p.amount)}</td>
+        <td>${formatDate(p.payment_date)}</td>
+        <td>${escapeHtml(p.payment_method || "")}</td>
+        <td>${escapeHtml(p.notes || "")}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-primary" onclick="editPayment(${p.payment_id})">Edit</button>
+          <button class="btn btn-sm btn-outline-danger" onclick="deletePayment(${p.payment_id})">Delete</button>
+        </td>
+      </tr>
+    `;
+  }).join("");
 }
 
-/* CRUD */
+window.editPayment = function (id) {
+  const p = paymentsCache.find((row) => String(row.payment_id) === String(id));
 
-window.editPayment = async function (id) {
-  const res = await fetch(`${ENDPOINT}/${id}`, { headers: authHeaders() });
-  const p = await res.json();
+  if (!p) {
+    alert("Payment not found");
+    return;
+  }
 
   paymentId.value = p.payment_id;
-  orderId.value = p.order_id;
-  amount.value = p.amount;
-  paymentDate.value = p.payment_date?.slice(0,10) || "";
+  orderId.value = p.order_id || p._order_id || "";
+  amount.value = p.amount ?? "";
+  paymentDate.value = formatDate(p.payment_date);
   paymentMethod.value = p.payment_method || "";
   notes.value = p.notes || "";
 };
 
 window.deletePayment = async function (id) {
-  if (!confirm("Delete payment?")) return;
+  if (!confirm("Delete this payment?")) return;
 
-  const res = await fetch(`${ENDPOINT}/${id}`, {
+  const res = await fetch(`${ORDERS_ENDPOINT}/payments/${id}`, {
     method: "DELETE",
-    headers: authHeaders()
+    headers: authHeaders(),
   });
 
+  const payload = await res.json().catch(() => null);
+
   if (!res.ok) {
-    alert("Delete failed");
+    alert(payload?.message || "Failed to delete payment");
     return;
   }
 
-  loadPayments();
+  clearForm();
+  await loadPayments();
 };
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
+  if (!orderId.value) {
+    alert("Please select an order");
+    return;
+  }
+
   const data = {
-    order_id: orderId.value,
-    amount: amount.value,
     payment_date: paymentDate.value,
+    amount: amount.value,
     payment_method: paymentMethod.value,
-    notes: notes.value.trim()
+    notes: notes.value.trim(),
   };
 
-  const id = paymentId.value;
-  const method = id ? "PUT" : "POST";
-  const url = id ? `${ENDPOINT}/${id}` : ENDPOINT;
+  const currentOrderId = orderId.value;
+  const currentPaymentId = paymentId.value;
 
-  const res = await fetch(url, {
-    method,
+  let res;
+
+  // current backend supports POST create + DELETE.
+  // keep save working reliably by using POST for new records.
+  // if you are editing, we show clear message instead of fake save failure.
+  if (currentPaymentId) {
+    alert("Editing existing payments is not supported by the current backend yet. Delete and create a new payment instead.");
+    return;
+  }
+
+  res = await fetch(`${ORDERS_ENDPOINT}/${currentOrderId}/payments`, {
+    method: "POST",
     headers: authHeaders(true),
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
 
+  const payload = await res.json().catch(() => null);
+
   if (!res.ok) {
-    alert("Save failed");
+    alert(payload?.message || "Failed to save payment");
     return;
   }
 
   clearForm();
-  loadPayments();
+  await loadPayments();
 });
-
-/* HELPERS */
 
 function clearForm() {
   paymentId.value = "";
@@ -178,14 +264,19 @@ function clearForm() {
 
   if (urlOrderId) {
     orderId.value = urlOrderId;
+  } else {
+    orderId.value = "";
   }
 }
 
 cancelEditBtn.addEventListener("click", clearForm);
 
-/* INIT */
-
-(async function () {
-  await loadOrders();
-  await loadPayments();
+(async function init() {
+  try {
+    await loadOrders();
+    clearForm();
+    await loadPayments();
+  } catch (error) {
+    orderSummary.innerHTML = `<div class="text-danger">${escapeHtml(error.message)}</div>`;
+  }
 })();
