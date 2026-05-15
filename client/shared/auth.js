@@ -53,7 +53,7 @@
     document.getElementById("logoutBtn")?.addEventListener("click", () => {
       localStorage.removeItem("aseel_token");
       localStorage.removeItem("aseel_user");
-      window.location.href = "./login.html";
+      window.location.href = "../login.html";
     });
   });
 })();

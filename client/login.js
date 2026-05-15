@@ -28,7 +28,7 @@ async function login() {
     localStorage.setItem("aseel_token", payload.token);
     localStorage.setItem("aseel_user", JSON.stringify(payload.user));
 
-    window.location.href = "./customers.html";
+    window.location.href = "./admin/customers.html";
   } catch (err) {
     errorBox.textContent = err.message || "Login failed";
   }

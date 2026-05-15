@@ -68,10 +68,12 @@ app.post("/api/login", async (req, res) => {
     }
 
     const [rows] = await dbPool.query(
-      `SELECT user_id, email, name, role
-       FROM users
-       WHERE email = ? AND password = ?
-       LIMIT 1`,
+      `
+      SELECT user_id, email, name, role
+      FROM users
+      WHERE email = ? AND password = ?
+      LIMIT 1
+      `,
       [String(email).trim(), String(password)]
     );
 
@@ -90,6 +92,7 @@ app.post("/api/login", async (req, res) => {
     });
   } catch (err) {
     console.error("LOGIN ERROR:", err);
+
     res.status(500).json({
       message: "Server error",
       error: String(err),
@@ -104,10 +107,17 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024,
   },
   fileFilter: (req, file, cb) => {
-    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    const allowed = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+    ];
 
     if (!allowed.includes(file.mimetype)) {
-      return cb(new Error("Only JPG, PNG, WEBP, and GIF files are allowed"));
+      return cb(
+        new Error("Only JPG, PNG, WEBP, and GIF files are allowed")
+      );
     }
 
     cb(null, true);
@@ -168,7 +178,7 @@ const seamstressesRouter = createSeamstressesRouter(seamstressesController);
 // ---------------- API ROUTES ----------------
 app.use("/api/customers", customersRouter);
 
-// temporary old spelling support
+// old spelling support
 app.use("/api/costumers", customersRouter);
 
 app.use("/api/dresses", dressesRouter);
@@ -177,13 +187,18 @@ app.use("/api/appointments", appointmentsRouter);
 app.use("/api/measurements", measurementsRouter);
 app.use("/api/seamstresses", seamstressesRouter);
 
-// ---------------- STATIC CLIENT ----------------
-const publicPath = path.join(__dirname, "..");
+// ---------------- STATIC ----------------
+const rootPath = path.join(__dirname, "..");
+const clientPath = path.join(rootPath, "client");
 
-app.use(express.static(publicPath));
+console.log("Serving root from:", rootPath);
+console.log("Serving client from:", clientPath);
+
+app.use(express.static(rootPath));
+app.use("/client", express.static(clientPath));
 
 app.get("/", (req, res) => {
-  res.sendFile(path.join(publicPath, "index.html"));
+  res.sendFile(path.join(rootPath, "index.html"));
 });
 
 // ---------------- START SERVER ----------------
