@@ -1,19 +1,29 @@
 (function () {
-  const path = window.location.pathname.toLowerCase();
+  const token = localStorage.getItem("aseel_token");
+  const userRaw = localStorage.getItem("aseel_user");
+  const currentPage = window.location.pathname.split("/").pop();
+  const publicPages = ["", "index.html", "login.html"];
+
+  if (!token && !publicPages.includes(currentPage)) {
+    window.location.href = "./login.html";
+    return;
+  }
 
   const links = [
-    { href: "customers.html", label: "Customers", match: "customers.html" },
-    { href: "dresses.html", label: "Dresses", match: "dresses.html" },
-    { href: "orders.html", label: "Orders", match: "orders.html" },
-    { href: "appointments.html", label: "Appointments", match: "appointments.html" },
-    { href: "payments.html", label: "Payments", match: "payments.html" },
-    { href: "measurements.html", label: "Measurements", match: "measurements.html" },
-    { href: "seamstresses.html", label: "Seamstresses", match: "seamstresses.html" },
+    { href: "customers.html", label: "Customers" },
+    { href: "dresses.html", label: "Dresses" },
+    { href: "orders.html", label: "Orders" },
+    { href: "appointments.html", label: "Appointments" },
+    { href: "measurements.html", label: "Measurements" },
+    { href: "payments.html", label: "Payments" },
+    { href: "seamstresses.html", label: "Seamstresses" },
   ];
 
-  function isActive(match) {
-    return path.endsWith("/" + match) || path.endsWith(match);
-  }
+  let userName = "";
+  try {
+    const user = JSON.parse(userRaw || "{}");
+    userName = user?.name || "";
+  } catch {}
 
   const navHtml = `
     <div class="hero mb-4">
@@ -21,27 +31,29 @@
         <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
           <div>
             <div class="brand">Aseel L'Atelier</div>
-            <div class="small-muted">Atelier Management System</div>
+            <div class="small-muted">Atelier Management System ${userName ? `- Welcome, ${userName}` : ""}</div>
           </div>
-
           <div class="d-flex flex-wrap gap-2">
             ${links.map(link => `
-              <a
-                class="btn ${isActive(link.match) ? "btn-primary" : "btn-outline-secondary"} btn-soft"
-                href="${link.href}"
-              >
+              <a class="btn ${currentPage === link.href ? "btn-primary" : "btn-outline-secondary"} btn-soft" href="./${link.href}">
                 ${link.label}
               </a>
             `).join("")}
-            <button class="btn btn-outline-danger btn-soft" onclick="logout()">Logout</button>
+            <button class="btn btn-outline-danger btn-soft" id="logoutBtn">Logout</button>
           </div>
         </div>
       </div>
     </div>
   `;
 
-  const mount = document.getElementById("sharedNav");
-  if (mount) {
-    mount.innerHTML = navHtml;
-  }
+  document.addEventListener("DOMContentLoaded", () => {
+    const mount = document.getElementById("sharedNav") || document.getElementById("navContainer");
+    if (mount) mount.innerHTML = navHtml;
+
+    document.getElementById("logoutBtn")?.addEventListener("click", () => {
+      localStorage.removeItem("aseel_token");
+      localStorage.removeItem("aseel_user");
+      window.location.href = "./login.html";
+    });
+  });
 })();

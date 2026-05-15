@@ -1,4 +1,4 @@
-const API_BASE = CONFIG.API_BASE;
+const API_BASE = window.CONFIG?.API_BASE || "http://localhost:4000/api";
 const ENDPOINT = `${API_BASE}/customers`;
 
 const tbody = document.getElementById("customersTbody");
@@ -31,40 +31,74 @@ function escapeHtml(value) {
 async function loadCustomers(search = "") {
   try {
     let url = ENDPOINT;
+
     if (search) {
-      url += "?search=" + encodeURIComponent(search);
+      url += `?search=${encodeURIComponent(search)}`;
     }
 
     const res = await fetch(url);
-    if (!res.ok) throw new Error("Failed to load customers");
+    const payload = await res.json().catch(() => null);
 
-    const data = await res.json();
-    renderCustomers(data);
+    if (!res.ok) {
+      throw new Error(payload?.message || "Failed to load customers");
+    }
+
+    renderCustomers(Array.isArray(payload) ? payload : []);
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="6" class="text-danger text-center">${err.message}</td></tr>`;
-    customersCount.textContent = "0";
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="text-danger text-center">
+          ${escapeHtml(err.message)}
+        </td>
+      </tr>
+    `;
+
+    if (customersCount) customersCount.textContent = "0 customers";
   }
 }
 
 function renderCustomers(rows) {
-  customersCount.textContent = `${rows.length} customers`;
+  if (customersCount) {
+    customersCount.textContent = `${rows.length} customer${rows.length === 1 ? "" : "s"}`;
+  }
 
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No customers found</td></tr>`;
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="text-center text-muted">
+          No customers found
+        </td>
+      </tr>
+    `;
     return;
   }
 
   tbody.innerHTML = rows.map(c => `
     <tr>
-      <td>${c.customer_id}</td>
+      <td>${escapeHtml(c.customer_id)}</td>
       <td>${escapeHtml(c.first_name)} ${escapeHtml(c.last_name)}</td>
       <td>${escapeHtml(c.phone)}</td>
       <td>${escapeHtml(c.city || "")}</td>
       <td>${escapeHtml(c.email || "")}</td>
       <td>
-        <button class="btn btn-sm btn-outline-primary" onclick="editCustomer(${c.customer_id})">Edit</button>
-        <button class="btn btn-sm btn-outline-danger" onclick="deleteCustomer(${c.customer_id})">Delete</button>
-        <a class="btn btn-sm btn-outline-secondary" href="orders.html?customer_id=${c.customer_id}">
+        <button
+          class="btn btn-sm btn-outline-primary"
+          onclick="editCustomer(${Number(c.customer_id)})"
+        >
+          Edit
+        </button>
+
+        <button
+          class="btn btn-sm btn-outline-danger"
+          onclick="deleteCustomer(${Number(c.customer_id)})"
+        >
+          Delete
+        </button>
+
+        <a
+          class="btn btn-sm btn-outline-secondary"
+          href="./orders.html?customer_id=${encodeURIComponent(c.customer_id)}"
+        >
           Orders
         </a>
       </td>
@@ -73,33 +107,48 @@ function renderCustomers(rows) {
 }
 
 window.editCustomer = async function (id) {
-  const res = await fetch(`${ENDPOINT}/${id}`);
-  const c = await res.json();
+  try {
+    const res = await fetch(`${ENDPOINT}/${id}`);
+    const customer = await res.json().catch(() => null);
 
-  idField.value = c.customer_id;
-  firstName.value = c.first_name || "";
-  lastName.value = c.last_name || "";
-  city.value = c.city || "";
-  phone.value = c.phone || "";
-  email.value = c.email || "";
+    if (!res.ok) {
+      throw new Error(customer?.message || "Failed to load customer");
+    }
+
+    idField.value = customer.customer_id || "";
+    firstName.value = customer.first_name || "";
+    lastName.value = customer.last_name || "";
+    city.value = customer.city || "";
+    phone.value = customer.phone || "";
+    email.value = customer.email || "";
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } catch (err) {
+    alert(err.message || "Failed to load customer");
+  }
 };
 
 window.deleteCustomer = async function (id) {
   if (!confirm("Delete this customer?")) return;
 
-  const res = await fetch(`${ENDPOINT}/${id}`, {
-    method: "DELETE"
-  });
+  try {
+    const res = await fetch(`${ENDPOINT}/${id}`, {
+      method: "DELETE",
+    });
 
-  if (!res.ok) {
-    alert("Failed to delete customer");
-    return;
+    const payload = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      throw new Error(payload?.message || "Failed to delete customer");
+    }
+
+    loadCustomers(searchInput.value.trim());
+  } catch (err) {
+    alert(err.message || "Failed to delete customer");
   }
-
-  loadCustomers(searchInput.value);
 };
 
-form.addEventListener("submit", async (e) => {
+form?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const data = {
@@ -107,26 +156,33 @@ form.addEventListener("submit", async (e) => {
     last_name: lastName.value.trim(),
     city: city.value.trim(),
     phone: phone.value.trim(),
-    email: email.value.trim()
+    email: email.value.trim(),
   };
 
   const id = idField.value;
   const method = id ? "PUT" : "POST";
   const url = id ? `${ENDPOINT}/${id}` : ENDPOINT;
 
-  const res = await fetch(url, {
-    method,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  });
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
 
-  if (!res.ok) {
-    alert("Failed to save customer");
-    return;
+    const payload = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      throw new Error(payload?.message || "Failed to save customer");
+    }
+
+    clearForm();
+    loadCustomers(searchInput.value.trim());
+  } catch (err) {
+    alert(err.message || "Failed to save customer");
   }
-
-  clearForm();
-  loadCustomers(searchInput.value);
 });
 
 function clearForm() {
@@ -134,15 +190,15 @@ function clearForm() {
   form.reset();
 }
 
-searchBtn.addEventListener("click", () => {
+searchBtn?.addEventListener("click", () => {
   loadCustomers(searchInput.value.trim());
 });
 
-resetBtn.addEventListener("click", () => {
+resetBtn?.addEventListener("click", () => {
   searchInput.value = "";
   loadCustomers();
 });
 
-cancelEditBtn.addEventListener("click", clearForm);
+cancelEditBtn?.addEventListener("click", clearForm);
 
 loadCustomers();

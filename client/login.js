@@ -1,10 +1,12 @@
-const API_BASE = CONFIG.API_BASE;
-const APP_BASE = "https://layandabbah-telhai.github.io/Aseel-LAtelier";
+const API_BASE = window.CONFIG?.API_BASE || "http://localhost:4000/api";
 
 async function login() {
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
   const errorBox = document.getElementById("loginError");
+
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
 
   errorBox.textContent = "";
 
@@ -26,7 +28,7 @@ async function login() {
     localStorage.setItem("aseel_token", payload.token);
     localStorage.setItem("aseel_user", JSON.stringify(payload.user));
 
-    window.location.href = `${APP_BASE}/client/customers.html`;
+    window.location.href = "./customers.html";
   } catch (err) {
     errorBox.textContent = err.message || "Login failed";
   }

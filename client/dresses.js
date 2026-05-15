@@ -1,4 +1,4 @@
-const API_BASE = CONFIG.API_BASE;
+const API_BASE = window.CONFIG?.API_BASE || "http://localhost:4000/api";
 const ENDPOINT = `${API_BASE}/dresses`;
 const UPLOAD_ENDPOINT = `${API_BASE}/upload-image`;
 const FALLBACK_IMAGE = "./logo.png";
@@ -28,6 +28,7 @@ const apiText = document.getElementById("apiUrlText");
 if (apiText) apiText.textContent = ENDPOINT;
 
 function setMessage(text, isError = false) {
+  if (!dressMessage) return;
   dressMessage.textContent = text || "";
   dressMessage.className = isError ? "text-danger mb-2" : "small-muted mb-2";
 }
@@ -47,8 +48,10 @@ function formatPrice(value) {
 }
 
 function renderStatusBadge(status) {
-  const safe = escapeHtml(status || "");
-  let style = "background: rgba(234,223,218,0.78); color:#7a665f; border:1px solid rgba(123,103,97,0.10);";
+  const safe = escapeHtml(status || "Available");
+
+  let style =
+    "background: rgba(234,223,218,0.78); color:#7a665f; border:1px solid rgba(123,103,97,0.10);";
 
   if (status === "Available") {
     style = "background:#e8f3ea; color:#50735c; border:1px solid #d4e7d8;";
@@ -84,6 +87,8 @@ function setExistingImages(images) {
 function renderPreviewGallery(urls = []) {
   const safeUrls = validImages(urls);
 
+  if (!imagePreviewGallery) return;
+
   if (!safeUrls.length) {
     imagePreviewGallery.innerHTML = `
       <div class="gallery-empty">No images selected</div>
@@ -91,29 +96,33 @@ function renderPreviewGallery(urls = []) {
     return;
   }
 
-  imagePreviewGallery.innerHTML = safeUrls.map(url => `
-    <div class="gallery-preview-item">
-      <img src="${escapeHtml(url)}" alt="Dress image" onerror="this.src='${FALLBACK_IMAGE}'">
-    </div>
-  `).join("");
+  imagePreviewGallery.innerHTML = safeUrls
+    .map(
+      (url) => `
+        <div class="gallery-preview-item">
+          <img src="${escapeHtml(url)}" alt="Dress image" onerror="this.src='${FALLBACK_IMAGE}'">
+        </div>
+      `
+    )
+    .join("");
 }
 
-if (imageFile) {
-  imageFile.addEventListener("change", () => {
-    const files = [...(imageFile.files || [])];
-    if (!files.length) {
-      renderPreviewGallery(getExistingImages());
-      return;
-    }
+imageFile?.addEventListener("change", () => {
+  const files = [...(imageFile.files || [])];
 
-    const previews = files.map(file => URL.createObjectURL(file));
-    renderPreviewGallery(previews);
-    setMessage(`${files.length} image(s) selected.`);
-  });
-}
+  if (!files.length) {
+    renderPreviewGallery(getExistingImages());
+    return;
+  }
+
+  const previews = files.map((file) => URL.createObjectURL(file));
+  renderPreviewGallery(previews);
+  setMessage(`${files.length} image(s) selected.`);
+});
 
 async function uploadSelectedImagesIfNeeded() {
   const files = [...(imageFile.files || [])];
+
   if (!files.length) {
     return getExistingImages();
   }
@@ -146,27 +155,34 @@ async function uploadSelectedImagesIfNeeded() {
 async function loadDresses(search = "") {
   try {
     let url = ENDPOINT;
+
     if (search) {
-      url += "?search=" + encodeURIComponent(search);
+      url += `?search=${encodeURIComponent(search)}`;
     }
 
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`Failed to load dresses (${res.status})`);
+    const payload = await res.json().catch(() => null);
 
-    const dresses = await res.json();
-    renderDresses(dresses);
+    if (!res.ok) {
+      throw new Error(payload?.message || `Failed to load dresses (${res.status})`);
+    }
+
+    renderDresses(Array.isArray(payload) ? payload : []);
   } catch (error) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="10" class="text-center text-danger">${error.message}</td>
+        <td colspan="10" class="text-center text-danger">${escapeHtml(error.message)}</td>
       </tr>
     `;
-    dressesCount.textContent = "0 dresses";
+
+    if (dressesCount) dressesCount.textContent = "0 dresses";
   }
 }
 
 function renderDresses(dresses) {
-  dressesCount.textContent = `${dresses.length} dresses`;
+  if (dressesCount) {
+    dressesCount.textContent = `${dresses.length} dress${dresses.length === 1 ? "" : "es"}`;
+  }
 
   if (!dresses.length) {
     tbody.innerHTML = `
@@ -177,64 +193,78 @@ function renderDresses(dresses) {
     return;
   }
 
-  tbody.innerHTML = dresses.map(d => {
-    const images = Array.isArray(d.images) && d.images.length
-      ? d.images
-      : (d.image_url ? [{ image_url: d.image_url }] : []);
+  tbody.innerHTML = dresses
+    .map((d) => {
+      const images =
+        Array.isArray(d.images) && d.images.length
+          ? d.images
+          : d.image_url
+            ? [{ image_url: d.image_url }]
+            : [];
 
-    const galleryHtml = images.length
-      ? `
-        <div class="table-gallery">
-          ${images.slice(0, 3).map(img => `
-            <img
-              src="${escapeHtml(img.image_url)}"
-              alt="${escapeHtml(d.dress_name)}"
-              class="table-dress-img"
-              onerror="this.src='${FALLBACK_IMAGE}'"
-            >
-          `).join("")}
-          ${images.length > 3 ? `<span class="gallery-more">+${images.length - 3}</span>` : ""}
-        </div>
-      `
-      : `
-        <img
-          src="${FALLBACK_IMAGE}"
-          alt="${escapeHtml(d.dress_name)}"
-          class="table-dress-img"
-        >
+      const galleryHtml = images.length
+        ? `
+          <div class="table-gallery">
+            ${images
+          .slice(0, 3)
+          .map(
+            (img) => `
+                  <img
+                    src="${escapeHtml(img.image_url)}"
+                    alt="${escapeHtml(d.dress_name)}"
+                    class="table-dress-img"
+                    onerror="this.src='${FALLBACK_IMAGE}'"
+                  >
+                `
+          )
+          .join("")}
+
+            ${images.length > 3
+          ? `<span class="gallery-more">+${images.length - 3}</span>`
+          : ""
+        }
+          </div>
+        `
+        : `
+          <img
+            src="${FALLBACK_IMAGE}"
+            alt="${escapeHtml(d.dress_name)}"
+            class="table-dress-img"
+          >
+        `;
+
+      return `
+        <tr>
+          <td>${escapeHtml(d.dress_id)}</td>
+          <td>${galleryHtml}</td>
+          <td>${escapeHtml(d.dress_name)}</td>
+          <td>${escapeHtml(d.size || "")}</td>
+          <td>${escapeHtml(d.color || "")}</td>
+          <td>${renderStatusBadge(d.status)}</td>
+          <td>${formatPrice(d.rental_price)}</td>
+          <td>${formatPrice(d.sale_price)}</td>
+          <td>${escapeHtml(d.notes || "")}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary" onclick="editDress(${Number(d.dress_id)})">
+              Edit
+            </button>
+
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteDress(${Number(d.dress_id)})">
+              Delete
+            </button>
+          </td>
+        </tr>
       `;
-
-    return `
-      <tr>
-        <td>${d.dress_id}</td>
-        <td>${galleryHtml}</td>
-        <td>${escapeHtml(d.dress_name)}</td>
-        <td>${escapeHtml(d.size || "")}</td>
-        <td>${escapeHtml(d.color || "")}</td>
-        <td>${renderStatusBadge(d.status)}</td>
-        <td>${formatPrice(d.rental_price)}</td>
-        <td>${formatPrice(d.sale_price)}</td>
-        <td>${escapeHtml(d.notes || "")}</td>
-        <td>
-          <button class="btn btn-sm btn-outline-primary" onclick="editDress(${d.dress_id})">
-            Edit
-          </button>
-          <button class="btn btn-sm btn-outline-danger" onclick="deleteDress(${d.dress_id})">
-            Delete
-          </button>
-        </td>
-      </tr>
-    `;
-  }).join("");
+    })
+    .join("");
 }
 
-form.addEventListener("submit", async (e) => {
+form?.addEventListener("submit", async (e) => {
   e.preventDefault();
   setMessage("Saving dress...");
 
   try {
     const uploadedImageUrls = await uploadSelectedImagesIfNeeded();
-    const finalImages = uploadedImageUrls.length ? uploadedImageUrls : getExistingImages();
 
     const data = {
       dress_name: dressName.value.trim(),
@@ -244,8 +274,8 @@ form.addEventListener("submit", async (e) => {
       rental_price: rentalPrice.value.trim(),
       sale_price: salePrice.value.trim(),
       notes: notes.value.trim(),
-      image_url: finalImages[0] || "",
-      image_urls: finalImages,
+      image_url: uploadedImageUrls[0] || "",
+      image_urls: uploadedImageUrls,
     };
 
     const id = idField.value;
@@ -254,68 +284,81 @@ form.addEventListener("submit", async (e) => {
 
     const res = await fetch(url, {
       method,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(data),
     });
 
     const payload = await res.json().catch(() => null);
 
     if (!res.ok) {
-      setMessage(payload?.message || "Failed to save dress.", true);
-      return;
+      throw new Error(payload?.message || "Failed to save dress.");
     }
 
     clearForm();
     setMessage("Dress saved successfully.");
-    loadDresses(searchInput.value);
+    loadDresses(searchInput.value.trim());
   } catch (error) {
     setMessage(error.message || "Failed to save dress.", true);
   }
 });
 
 window.editDress = async function (id) {
-  const res = await fetch(`${ENDPOINT}/${id}`);
-  if (!res.ok) {
-    setMessage("Failed to load dress.", true);
-    return;
+  try {
+    const res = await fetch(`${ENDPOINT}/${id}`);
+    const d = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      throw new Error(d?.message || "Failed to load dress.");
+    }
+
+    idField.value = d.dress_id || "";
+    dressName.value = d.dress_name || "";
+    size.value = d.size || "";
+    color.value = d.color || "";
+    statusField.value = d.status || "Available";
+    rentalPrice.value = d.rental_price ?? "";
+    salePrice.value = d.sale_price ?? "";
+    notes.value = d.notes || "";
+    imageFile.value = "";
+
+    const imageUrls =
+      Array.isArray(d.images) && d.images.length
+        ? d.images.map((img) => img.image_url).filter(Boolean)
+        : d.image_url
+          ? [d.image_url]
+          : [];
+
+    setExistingImages(imageUrls);
+    renderPreviewGallery(imageUrls);
+    setMessage("Edit mode enabled.");
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } catch (error) {
+    setMessage(error.message || "Failed to load dress.", true);
   }
-
-  const d = await res.json();
-
-  idField.value = d.dress_id;
-  dressName.value = d.dress_name || "";
-  size.value = d.size || "";
-  color.value = d.color || "";
-  statusField.value = d.status || "Available";
-  rentalPrice.value = d.rental_price ?? "";
-  salePrice.value = d.sale_price ?? "";
-  notes.value = d.notes || "";
-  imageFile.value = "";
-
-  const imageUrls =
-    Array.isArray(d.images) && d.images.length
-      ? d.images.map(img => img.image_url)
-      : (d.image_url ? [d.image_url] : []);
-
-  setExistingImages(imageUrls);
-  renderPreviewGallery(imageUrls);
-  setMessage("Edit mode enabled.");
 };
 
 window.deleteDress = async function (id) {
   if (!confirm("Delete this dress?")) return;
 
-  const res = await fetch(`${ENDPOINT}/${id}`, {
-    method: "DELETE",
-  });
+  try {
+    const res = await fetch(`${ENDPOINT}/${id}`, {
+      method: "DELETE",
+    });
 
-  if (!res.ok) {
-    setMessage("Failed to delete dress.", true);
-    return;
+    const payload = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      throw new Error(payload?.message || "Failed to delete dress.");
+    }
+
+    setMessage("Dress deleted successfully.");
+    loadDresses(searchInput.value.trim());
+  } catch (error) {
+    setMessage(error.message || "Failed to delete dress.", true);
   }
-
-  setMessage("Dress deleted successfully.");
-  loadDresses(searchInput.value);
 };
 
 function clearForm() {
@@ -328,16 +371,16 @@ function clearForm() {
   setMessage("");
 }
 
-searchBtn.addEventListener("click", () => {
+searchBtn?.addEventListener("click", () => {
   loadDresses(searchInput.value.trim());
 });
 
-resetBtn.addEventListener("click", () => {
+resetBtn?.addEventListener("click", () => {
   searchInput.value = "";
   loadDresses();
 });
 
-cancelEditBtn.addEventListener("click", clearForm);
+cancelEditBtn?.addEventListener("click", clearForm);
 
 renderPreviewGallery([]);
 loadDresses();

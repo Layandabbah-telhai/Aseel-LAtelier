@@ -6,8 +6,13 @@ function toNullableNumber(value) {
 
 function normalizeInput(body) {
   return {
-    customer_id: Number(body?.customer_id),
+    customer_id:
+      body?.customer_id === "" || body?.customer_id === undefined || body?.customer_id === null
+        ? null
+        : Number(body.customer_id),
+
     order_id: Number(body?.order_id),
+
     tailoring_type: String(body?.tailoring_type || "").trim(),
     bust: toNullableNumber(body?.bust),
     waist: toNullableNumber(body?.waist),
@@ -20,7 +25,6 @@ function normalizeInput(body) {
 }
 
 function validateInput(data) {
-  if (!Number.isFinite(data.customer_id)) return "customer_id is required";
   if (!Number.isFinite(data.order_id)) return "order_id is required";
 
   const numericFields = [
@@ -39,6 +43,7 @@ function validateInput(data) {
   }
 
   if (data.tailoring_type.length > 50) return "tailoring_type too long";
+
   return null;
 }
 
@@ -53,12 +58,31 @@ class MeasurementsController {
     this.remove = this.remove.bind(this);
   }
 
+  async fillCustomerIdFromOrder(data) {
+    if (Number.isFinite(data.customer_id)) {
+      return data;
+    }
+
+    const [rows] = await this.model.db.query(
+      `SELECT customer_id FROM \`${this.model.ordersTable}\` WHERE order_id = ? LIMIT 1`,
+      [data.order_id]
+    );
+
+    if (!rows.length) {
+      throw new Error("Order not found");
+    }
+
+    data.customer_id = rows[0].customer_id;
+    return data;
+  }
+
   async list(req, res) {
     try {
       const rows = await this.model.list({
         search: req.query.search || "",
         order_id: req.query.order_id || null,
       });
+
       res.json(rows);
     } catch (err) {
       console.error("MEASUREMENTS LIST ERROR:", err);
@@ -69,12 +93,16 @@ class MeasurementsController {
   async get(req, res) {
     try {
       const id = Number(req.params.id);
+
       if (!Number.isFinite(id)) {
         return res.status(400).json({ message: "Invalid id" });
       }
 
       const row = await this.model.getById(id);
-      if (!row) return res.status(404).json({ message: "Not found" });
+
+      if (!row) {
+        return res.status(404).json({ message: "Not found" });
+      }
 
       res.json(row);
     } catch (err) {
@@ -85,14 +113,25 @@ class MeasurementsController {
 
   async create(req, res) {
     try {
-      const data = normalizeInput(req.body);
+      let data = normalizeInput(req.body);
+
       const errMsg = validateInput(data);
-      if (errMsg) return res.status(400).json({ message: errMsg });
+      if (errMsg) {
+        return res.status(400).json({ message: errMsg });
+      }
+
+      data = await this.fillCustomerIdFromOrder(data);
 
       const created = await this.model.create(data);
+
       res.status(201).json(created);
     } catch (err) {
       console.error("MEASUREMENTS CREATE ERROR:", err);
+
+      if (err.message === "Order not found") {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
       res.status(500).json({ message: "Server error", error: String(err) });
     }
   }
@@ -100,20 +139,34 @@ class MeasurementsController {
   async update(req, res) {
     try {
       const id = Number(req.params.id);
+
       if (!Number.isFinite(id)) {
         return res.status(400).json({ message: "Invalid id" });
       }
 
-      const data = normalizeInput(req.body);
+      let data = normalizeInput(req.body);
+
       const errMsg = validateInput(data);
-      if (errMsg) return res.status(400).json({ message: errMsg });
+      if (errMsg) {
+        return res.status(400).json({ message: errMsg });
+      }
+
+      data = await this.fillCustomerIdFromOrder(data);
 
       const updated = await this.model.update(id, data);
-      if (!updated) return res.status(404).json({ message: "Not found" });
+
+      if (!updated) {
+        return res.status(404).json({ message: "Not found" });
+      }
 
       res.json(updated);
     } catch (err) {
       console.error("MEASUREMENTS UPDATE ERROR:", err);
+
+      if (err.message === "Order not found") {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
       res.status(500).json({ message: "Server error", error: String(err) });
     }
   }
@@ -121,12 +174,16 @@ class MeasurementsController {
   async remove(req, res) {
     try {
       const id = Number(req.params.id);
+
       if (!Number.isFinite(id)) {
         return res.status(400).json({ message: "Invalid id" });
       }
 
       const ok = await this.model.remove(id);
-      if (!ok) return res.status(404).json({ message: "Not found" });
+
+      if (!ok) {
+        return res.status(404).json({ message: "Not found" });
+      }
 
       res.json({ message: "Deleted" });
     } catch (err) {
@@ -137,4 +194,3 @@ class MeasurementsController {
 }
 
 module.exports = MeasurementsController;
-

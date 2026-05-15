@@ -1,4 +1,5 @@
 require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -6,29 +7,29 @@ const multer = require("multer");
 
 const { createPoolFromEnv } = require("./db");
 
-const CostumersModel = require("./customers/model");
-const CostumersController = require("./customers/controller");
-const createCostumersRouter = require("./customers/routes");
+// ---------------- MODELS ----------------
+const CustomersModel = require("./models/customersModel");
+const DressesModel = require("./models/dressesModel");
+const OrdersModel = require("./models/ordersModel");
+const AppointmentsModel = require("./models/appointmentsModel");
+const MeasurementsModel = require("./models/measurementsModel");
+const SeamstressesModel = require("./models/seamstressesModel");
 
-const DressesModel = require("./dresses/dresses.model");
-const DressesController = require("./dresses/dresses.controller");
-const createDressesRouter = require("./dresses/dresses.routes");
+// ---------------- CONTROLLERS ----------------
+const CustomersController = require("./controllers/customersController");
+const DressesController = require("./controllers/dressesController");
+const OrdersController = require("./controllers/ordersController");
+const AppointmentsController = require("./controllers/appointmentsController");
+const MeasurementsController = require("./controllers/measurementsController");
+const SeamstressesController = require("./controllers/seamstressesController");
 
-const OrdersModel = require("./orders/orders.model");
-const OrdersController = require("./orders/orders.controller");
-const createOrdersRouter = require("./orders/orders.routes");
-
-const AppointmentsModel = require("./appointments/model");
-const AppointmentsController = require("./appointments/controller");
-const createAppointmentsRouter = require("./appointments/routes");
-
-const MeasurementsModel = require("./measurements/model");
-const MeasurementsController = require("./measurements/controller");
-const createMeasurementsRouter = require("./measurements/routes");
-
-const SeamstressesModel = require("./seamstresses/model");
-const SeamstressesController = require("./seamstresses/controller");
-const createSeamstressesRouter = require("./seamstresses/routes");
+// ---------------- ROUTES ----------------
+const createCustomersRouter = require("./routes/customersRoutes");
+const createDressesRouter = require("./routes/dressesRoutes");
+const createOrdersRouter = require("./routes/ordersRoutes");
+const createAppointmentsRouter = require("./routes/appointmentsRoutes");
+const createMeasurementsRouter = require("./routes/measurementsRoutes");
+const createSeamstressesRouter = require("./routes/seamstressesRoutes");
 
 const app = express();
 
@@ -61,7 +62,9 @@ app.post("/api/login", async (req, res) => {
     const { email, password } = req.body || {};
 
     if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required" });
+      return res.status(400).json({
+        message: "Email and password are required",
+      });
     }
 
     const [rows] = await dbPool.query(
@@ -73,7 +76,9 @@ app.post("/api/login", async (req, res) => {
     );
 
     if (!rows.length) {
-      return res.status(401).json({ message: "Invalid email or password" });
+      return res.status(401).json({
+        message: "Invalid email or password",
+      });
     }
 
     const user = rows[0];
@@ -85,7 +90,10 @@ app.post("/api/login", async (req, res) => {
     });
   } catch (err) {
     console.error("LOGIN ERROR:", err);
-    res.status(500).json({ message: "Server error", error: String(err) });
+    res.status(500).json({
+      message: "Server error",
+      error: String(err),
+    });
   }
 });
 
@@ -97,9 +105,11 @@ const upload = multer({
   },
   fileFilter: (req, file, cb) => {
     const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
     if (!allowed.includes(file.mimetype)) {
       return cb(new Error("Only JPG, PNG, WEBP, and GIF files are allowed"));
     }
+
     cb(null, true);
   },
 });
@@ -118,7 +128,9 @@ app.post("/api/upload-image", (req, res) => {
       });
     }
 
-    const imageUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
+    const imageUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString(
+      "base64"
+    )}`;
 
     res.status(201).json({
       message: "Image uploaded successfully",
@@ -128,10 +140,10 @@ app.post("/api/upload-image", (req, res) => {
   });
 });
 
-// ---------------- ROUTERS ----------------
-const customersModel = new CostumersModel(dbPool);
-const customersController = new CostumersController(customersModel);
-const customersRouter = createCostumersRouter(customersController);
+// ---------------- INIT MVC ----------------
+const customersModel = new CustomersModel(dbPool);
+const customersController = new CustomersController(customersModel);
+const customersRouter = createCustomersRouter(customersController);
 
 const dressesModel = new DressesModel(dbPool);
 const dressesController = new DressesController(dressesModel);
@@ -153,23 +165,30 @@ const seamstressesModel = new SeamstressesModel(dbPool);
 const seamstressesController = new SeamstressesController(seamstressesModel);
 const seamstressesRouter = createSeamstressesRouter(seamstressesController);
 
+// ---------------- API ROUTES ----------------
 app.use("/api/customers", customersRouter);
+
+// temporary old spelling support
 app.use("/api/costumers", customersRouter);
+
 app.use("/api/dresses", dressesRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/appointments", appointmentsRouter);
 app.use("/api/measurements", measurementsRouter);
 app.use("/api/seamstresses", seamstressesRouter);
 
-// ---------------- STATIC ----------------
+// ---------------- STATIC CLIENT ----------------
 const publicPath = path.join(__dirname, "..");
+
 app.use(express.static(publicPath));
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(publicPath, "index.html"));
 });
 
+// ---------------- START SERVER ----------------
 const port = Number(process.env.PORT || 4000);
+
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });

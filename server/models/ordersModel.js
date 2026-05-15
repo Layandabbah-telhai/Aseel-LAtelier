@@ -1,6 +1,7 @@
 class OrdersModel {
   constructor(dbPool) {
     this.db = dbPool;
+
     this.ordersTable = process.env.ORDERS_TABLE || "orders";
     this.customersTable = process.env.CUSTOMERS_TABLE || "customers";
     this.dressesTable = process.env.DRESSES_TABLE || "dresses";
@@ -13,6 +14,7 @@ class OrdersModel {
 
     if (search.trim()) {
       const like = `%${search.trim()}%`;
+
       where.push(`(
         c.first_name LIKE ? OR
         c.last_name LIKE ? OR
@@ -21,6 +23,7 @@ class OrdersModel {
         o.order_type LIKE ? OR
         o.occasion_type LIKE ?
       )`);
+
       params.push(like, like, like, like, like, like);
     }
 
@@ -29,7 +32,9 @@ class OrdersModel {
       params.push(status.trim());
     }
 
-    const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
+    const whereSql = where.length
+      ? `WHERE ${where.join(" AND ")}`
+      : "";
 
     const [rows] = await this.db.query(
       `
@@ -43,16 +48,28 @@ class OrdersModel {
         o.return_date,
         o.total_price,
         o.status,
+
         c.first_name,
         c.last_name,
         c.phone,
+
         d.dress_name,
+
         COALESCE(SUM(p.amount), 0) AS paid_amount
+
       FROM \`${this.ordersTable}\` o
-      JOIN \`${this.customersTable}\` c ON c.customer_id = o.customer_id
-      JOIN \`${this.dressesTable}\` d ON d.dress_id = o.dress_id
-      LEFT JOIN \`${this.paymentsTable}\` p ON p.order_id = o.order_id
+
+      JOIN \`${this.customersTable}\` c
+        ON c.customer_id = o.customer_id
+
+      JOIN \`${this.dressesTable}\` d
+        ON d.dress_id = o.dress_id
+
+      LEFT JOIN \`${this.paymentsTable}\` p
+        ON p.order_id = o.order_id
+
       ${whereSql}
+
       GROUP BY
         o.order_id,
         o.customer_id,
@@ -67,6 +84,7 @@ class OrdersModel {
         c.last_name,
         c.phone,
         d.dress_name
+
       ORDER BY o.order_id DESC
       LIMIT 500
       `,
@@ -77,6 +95,7 @@ class OrdersModel {
       ...row,
       paid_amount: Number(row.paid_amount || 0),
       total_price: Number(row.total_price || 0),
+
       payment_status:
         Number(row.paid_amount || 0) <= 0
           ? "unpaid"
@@ -99,10 +118,16 @@ class OrdersModel {
         o.return_date,
         o.total_price,
         o.status,
+
         COALESCE(SUM(p.amount), 0) AS paid_amount
+
       FROM \`${this.ordersTable}\` o
-      LEFT JOIN \`${this.paymentsTable}\` p ON p.order_id = o.order_id
+
+      LEFT JOIN \`${this.paymentsTable}\` p
+        ON p.order_id = o.order_id
+
       WHERE o.order_id = ?
+
       GROUP BY
         o.order_id,
         o.customer_id,
@@ -118,12 +143,14 @@ class OrdersModel {
     );
 
     const row = rows[0] || null;
+
     if (!row) return null;
 
     return {
       ...row,
       paid_amount: Number(row.paid_amount || 0),
       total_price: Number(row.total_price || 0),
+
       payment_status:
         Number(row.paid_amount || 0) <= 0
           ? "unpaid"
@@ -133,50 +160,38 @@ class OrdersModel {
     };
   }
 
-  async create({
-    customer_id,
-    dress_id,
-    order_type,
-    occasion_type,
-    order_date,
-    return_date,
-    total_price,
-    status,
-  }) {
+  async create(data) {
     const [result] = await this.db.query(
       `
       INSERT INTO \`${this.ordersTable}\`
-      (customer_id, dress_id, order_type, occasion_type, order_date, return_date, total_price, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `,
-      [
+      (
         customer_id,
         dress_id,
         order_type,
-        occasion_type || null,
+        occasion_type,
         order_date,
-        return_date || null,
+        return_date,
         total_price,
-        status,
+        status
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        data.customer_id,
+        data.dress_id,
+        data.order_type,
+        data.occasion_type || null,
+        data.order_date,
+        data.return_date || null,
+        data.total_price,
+        data.status,
       ]
     );
 
     return this.getById(result.insertId);
   }
 
-  async update(
-    order_id,
-    {
-      customer_id,
-      dress_id,
-      order_type,
-      occasion_type,
-      order_date,
-      return_date,
-      total_price,
-      status,
-    }
-  ) {
+  async update(order_id, data) {
     await this.db.query(
       `
       UPDATE \`${this.ordersTable}\`
@@ -192,14 +207,14 @@ class OrdersModel {
       WHERE order_id = ?
       `,
       [
-        customer_id,
-        dress_id,
-        order_type,
-        occasion_type || null,
-        order_date,
-        return_date || null,
-        total_price,
-        status,
+        data.customer_id,
+        data.dress_id,
+        data.order_type,
+        data.occasion_type || null,
+        data.order_date,
+        data.return_date || null,
+        data.total_price,
+        data.status,
         order_id,
       ]
     );
@@ -225,18 +240,30 @@ class OrdersModel {
     const [rows] = await this.db.query(
       `
       SELECT
-        payment_id,
-        order_id,
-        payment_date,
-        amount,
-        payment_method,
-        notes,
-        due_date,
-        reference_number,
-        payment_status
-      FROM \`${this.paymentsTable}\`
-      WHERE order_id = ?
-      ORDER BY payment_date DESC, payment_id DESC
+        p.payment_id,
+        p.order_id,
+        p.payment_date,
+        p.amount,
+        p.payment_method,
+        p.notes,
+        p.due_date,
+        p.reference_number,
+        p.payment_status,
+
+        c.first_name,
+        c.last_name
+
+      FROM \`${this.paymentsTable}\` p
+
+      JOIN \`${this.ordersTable}\` o
+        ON o.order_id = p.order_id
+
+      JOIN \`${this.customersTable}\` c
+        ON c.customer_id = o.customer_id
+
+      WHERE p.order_id = ?
+
+      ORDER BY p.payment_date DESC, p.payment_id DESC
       `,
       [order_id]
     );
@@ -251,7 +278,16 @@ class OrdersModel {
     const [result] = await this.db.query(
       `
       INSERT INTO \`${this.paymentsTable}\`
-      (order_id, payment_date, amount, payment_method, notes, due_date, reference_number, payment_status)
+      (
+        order_id,
+        payment_date,
+        amount,
+        payment_method,
+        notes,
+        due_date,
+        reference_number,
+        payment_status
+      )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
@@ -285,6 +321,61 @@ class OrdersModel {
     );
 
     const row = rows[0];
+
+    return {
+      ...row,
+      amount: Number(row.amount || 0),
+    };
+  }
+
+  async updatePayment(payment_id, payment) {
+    await this.db.query(
+      `
+      UPDATE \`${this.paymentsTable}\`
+      SET
+        payment_date = ?,
+        amount = ?,
+        payment_method = ?,
+        notes = ?,
+        due_date = ?,
+        reference_number = ?,
+        payment_status = ?
+      WHERE payment_id = ?
+      `,
+      [
+        payment.payment_date,
+        payment.amount,
+        payment.payment_method || null,
+        payment.notes || null,
+        payment.due_date || null,
+        payment.reference_number || null,
+        payment.payment_status || "Paid",
+        payment_id,
+      ]
+    );
+
+    const [rows] = await this.db.query(
+      `
+      SELECT
+        payment_id,
+        order_id,
+        payment_date,
+        amount,
+        payment_method,
+        notes,
+        due_date,
+        reference_number,
+        payment_status
+      FROM \`${this.paymentsTable}\`
+      WHERE payment_id = ?
+      `,
+      [payment_id]
+    );
+
+    const row = rows[0];
+
+    if (!row) return null;
+
     return {
       ...row,
       amount: Number(row.amount || 0),

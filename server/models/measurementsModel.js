@@ -7,18 +7,37 @@ class MeasurementsModel {
     this.dressesTable = process.env.DRESSES_TABLE || "dresses";
   }
 
+  async getCustomerIdFromOrder(order_id) {
+    const [rows] = await this.db.query(
+      `SELECT customer_id
+       FROM \`${this.ordersTable}\`
+       WHERE order_id = ?
+       LIMIT 1`,
+      [order_id]
+    );
+
+    return rows[0]?.customer_id || null;
+  }
+
   async list({ search = "", order_id = null } = {}) {
     const where = [];
     const params = [];
 
-    if (Number.isFinite(Number(order_id))) {
+    if (
+      order_id !== null &&
+      order_id !== undefined &&
+      order_id !== "" &&
+      Number.isFinite(Number(order_id))
+    ) {
       where.push("m.order_id = ?");
       params.push(Number(order_id));
     }
 
     const s = String(search || "").trim();
+
     if (s) {
       const like = `%${s}%`;
+
       where.push(`(
         c.first_name LIKE ? OR
         c.last_name LIKE ? OR
@@ -27,6 +46,7 @@ class MeasurementsModel {
         o.occasion_type LIKE ? OR
         m.tailoring_type LIKE ?
       )`);
+
       params.push(like, like, like, like, like, like);
     }
 
@@ -52,9 +72,12 @@ class MeasurementsModel {
         d.dress_name,
         o.occasion_type
       FROM \`${this.measurementsTable}\` m
-      JOIN \`${this.customersTable}\` c ON c.customer_id = m.customer_id
-      JOIN \`${this.ordersTable}\` o ON o.order_id = m.order_id
-      LEFT JOIN \`${this.dressesTable}\` d ON d.dress_id = o.dress_id
+      LEFT JOIN \`${this.customersTable}\` c
+        ON c.customer_id = m.customer_id
+      LEFT JOIN \`${this.ordersTable}\` o
+        ON o.order_id = m.order_id
+      LEFT JOIN \`${this.dressesTable}\` d
+        ON d.dress_id = o.dress_id
       ${whereSql}
       ORDER BY m.measurement_id DESC
       LIMIT 500
@@ -62,7 +85,7 @@ class MeasurementsModel {
       params
     );
 
-    return rows.map(this.normalizeRow);
+    return rows.map((row) => this.normalizeRow(row));
   }
 
   async getById(measurement_id) {
@@ -86,9 +109,12 @@ class MeasurementsModel {
         d.dress_name,
         o.occasion_type
       FROM \`${this.measurementsTable}\` m
-      JOIN \`${this.customersTable}\` c ON c.customer_id = m.customer_id
-      JOIN \`${this.ordersTable}\` o ON o.order_id = m.order_id
-      LEFT JOIN \`${this.dressesTable}\` d ON d.dress_id = o.dress_id
+      LEFT JOIN \`${this.customersTable}\` c
+        ON c.customer_id = m.customer_id
+      LEFT JOIN \`${this.ordersTable}\` o
+        ON o.order_id = m.order_id
+      LEFT JOIN \`${this.dressesTable}\` d
+        ON d.dress_id = o.dress_id
       WHERE m.measurement_id = ?
       `,
       [measurement_id]
@@ -98,6 +124,12 @@ class MeasurementsModel {
   }
 
   async create(data) {
+    let customerId = data.customer_id;
+
+    if (!customerId && data.order_id) {
+      customerId = await this.getCustomerIdFromOrder(data.order_id);
+    }
+
     const [result] = await this.db.query(
       `
       INSERT INTO \`${this.measurementsTable}\`
@@ -116,7 +148,7 @@ class MeasurementsModel {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
-        data.customer_id,
+        customerId,
         data.order_id,
         data.tailoring_type || null,
         data.bust,
@@ -133,6 +165,12 @@ class MeasurementsModel {
   }
 
   async update(measurement_id, data) {
+    let customerId = data.customer_id;
+
+    if (!customerId && data.order_id) {
+      customerId = await this.getCustomerIdFromOrder(data.order_id);
+    }
+
     await this.db.query(
       `
       UPDATE \`${this.measurementsTable}\`
@@ -150,7 +188,7 @@ class MeasurementsModel {
       WHERE measurement_id = ?
       `,
       [
-        data.customer_id,
+        customerId,
         data.order_id,
         data.tailoring_type || null,
         data.bust,
@@ -169,7 +207,8 @@ class MeasurementsModel {
 
   async remove(measurement_id) {
     const [result] = await this.db.query(
-      `DELETE FROM \`${this.measurementsTable}\` WHERE measurement_id = ?`,
+      `DELETE FROM \`${this.measurementsTable}\`
+       WHERE measurement_id = ?`,
       [measurement_id]
     );
 
@@ -177,15 +216,21 @@ class MeasurementsModel {
   }
 
   normalizeRow(row) {
-    return {
+    const normalized = {
       ...row,
       bust: row.bust === null ? null : Number(row.bust),
       waist: row.waist === null ? null : Number(row.waist),
       hips: row.hips === null ? null : Number(row.hips),
       shoulder: row.shoulder === null ? null : Number(row.shoulder),
-      sleeve_length: row.sleeve_length === null ? null : Number(row.sleeve_length),
-      dress_length: row.dress_length === null ? null : Number(row.dress_length),
+      sleeve_length:
+        row.sleeve_length === null ? null : Number(row.sleeve_length),
+      dress_length:
+        row.dress_length === null ? null : Number(row.dress_length),
     };
+
+    normalized.length = normalized.dress_length;
+
+    return normalized;
   }
 }
 
