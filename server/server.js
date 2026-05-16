@@ -69,7 +69,7 @@ app.post("/api/login", async (req, res) => {
 
     const [rows] = await dbPool.query(
       `
-      SELECT user_id, email, name, role
+      SELECT user_id, email, name, role, customer_id
       FROM users
       WHERE email = ? AND password = ?
       LIMIT 1
@@ -92,6 +92,433 @@ app.post("/api/login", async (req, res) => {
     });
   } catch (err) {
     console.error("LOGIN ERROR:", err);
+    res.status(500).json({
+      message: "Server error",
+      error: String(err),
+    });
+  }
+});
+
+// ---------------- CUSTOMER DASHBOARD API ----------------
+app.get("/api/customer-dashboard/:customerId", async (req, res) => {
+  try {
+    const customerId = Number(req.params.customerId);
+
+    if (!Number.isFinite(customerId)) {
+      return res.status(400).json({
+        message: "Invalid customer id",
+      });
+    }
+
+    const [[customer]] = await dbPool.query(
+      `
+      SELECT customer_id, first_name, last_name, email, phone, city
+      FROM customers
+      WHERE customer_id = ?
+      `,
+      [customerId]
+    );
+
+    if (!customer) {
+      return res.status(404).json({
+        message: "Customer not found",
+      });
+    }
+
+    const [orders] = await dbPool.query(
+      `
+      SELECT
+        o.order_id,
+        o.customer_id,
+        o.dress_id,
+        o.order_type,
+        o.occasion_type,
+        o.order_date,
+        o.return_date,
+        o.total_price,
+        o.status,
+        d.dress_name,
+        d.size,
+        d.color,
+        d.image_url,
+        COALESCE(SUM(p.amount), 0) AS paid_amount
+      FROM orders o
+      LEFT JOIN dresses d ON d.dress_id = o.dress_id
+      LEFT JOIN payments p ON p.order_id = o.order_id
+      WHERE o.customer_id = ?
+      GROUP BY
+        o.order_id,
+        o.customer_id,
+        o.dress_id,
+        o.order_type,
+        o.occasion_type,
+        o.order_date,
+        o.return_date,
+        o.total_price,
+        o.status,
+        d.dress_name,
+        d.size,
+        d.color,
+        d.image_url
+      ORDER BY o.order_id DESC
+      `,
+      [customerId]
+    );
+
+    const orderIds = orders.map((o) => o.order_id);
+
+    let measurements = [];
+    let appointments = [];
+    let payments = [];
+
+    if (orderIds.length) {
+      const placeholders = orderIds.map(() => "?").join(",");
+
+      const [measurementRows] = await dbPool.query(
+        `
+        SELECT
+          measurement_id,
+          customer_id,
+          order_id,
+          tailoring_type,
+          bust,
+          waist,
+          hips,
+          shoulder,
+          sleeve_length,
+          dress_length,
+          notes
+        FROM measurements
+        WHERE order_id IN (${placeholders})
+        ORDER BY measurement_id DESC
+        `,
+        orderIds
+      );
+
+      measurements = measurementRows;
+
+      const [appointmentRows] = await dbPool.query(
+        `
+        SELECT
+          appointment_id,
+          customer_id,
+          order_id,
+          appointment_date,
+          appointment_time,
+          appointment_type AS type,
+          status,
+          notes
+        FROM appointments
+        WHERE order_id IN (${placeholders})
+        ORDER BY appointment_date DESC, appointment_time DESC
+        `,
+        orderIds
+      );
+
+      appointments = appointmentRows;
+
+      const [paymentRows] = await dbPool.query(
+        `
+        SELECT
+          payment_id,
+          order_id,
+          payment_date,
+          amount,
+          payment_method,
+          notes,
+          payment_status
+        FROM payments
+        WHERE order_id IN (${placeholders})
+        ORDER BY payment_date DESC, payment_id DESC
+        `,
+        orderIds
+      );
+
+      payments = paymentRows;
+    }
+
+    const dashboardOrders = orders.map((order) => {
+      const orderPayments = payments.filter(
+        (p) => Number(p.order_id) === Number(order.order_id)
+      );
+
+      const orderMeasurements = measurements.filter(
+        (m) => Number(m.order_id) === Number(order.order_id)
+      );
+
+      const orderAppointments = appointments.filter(
+        (a) => Number(a.order_id) === Number(order.order_id)
+      );
+
+      const totalPrice = Number(order.total_price || 0);
+      const paidAmount = Number(order.paid_amount || 0);
+
+      return {
+        ...order,
+        total_price: totalPrice,
+        paid_amount: paidAmount,
+        remaining_amount: Math.max(totalPrice - paidAmount, 0),
+        payment_status:
+          paidAmount <= 0
+            ? "unpaid"
+            : paidAmount < totalPrice
+              ? "partial"
+              : "paid",
+        measurements: orderMeasurements,
+        appointments: orderAppointments,
+        payments: orderPayments.map((p) => ({
+          ...p,
+          amount: Number(p.amount || 0),
+        })),
+      };
+    });
+
+    res.json({
+      customer,
+      orders: dashboardOrders,
+    });
+  } catch (err) {
+    console.error("CUSTOMER DASHBOARD ERROR:", err);
+    res.status(500).json({
+      message: "Server error",
+      error: String(err),
+    });
+  }
+});
+
+// ---------------- CUSTOMER FEEDBACK ----------------
+app.post("/api/customer-feedback", async (req, res) => {
+  try {
+    const { customer_id, order_id, rating, comment } = req.body || {};
+
+    if (!customer_id || !order_id || !rating) {
+      return res.status(400).json({
+        message: "Missing required fields",
+      });
+    }
+
+    await dbPool.query(
+      `
+      INSERT INTO feedback
+      (
+        customer_id,
+        order_id,
+        rating,
+        comment
+      )
+      VALUES (?, ?, ?, ?)
+      `,
+      [
+        Number(customer_id),
+        Number(order_id),
+        Number(rating),
+        comment || null,
+      ]
+    );
+
+    res.status(201).json({
+      message: "Feedback submitted successfully",
+    });
+  } catch (err) {
+    console.error("FEEDBACK ERROR:", err);
+    res.status(500).json({
+      message: "Server error",
+      error: String(err),
+    });
+  }
+});
+
+// ---------------- CUSTOMER APPOINTMENT REQUEST ----------------
+app.post("/api/customer-appointment-request", async (req, res) => {
+  try {
+    const {
+      customer_id,
+      order_id,
+      appointment_date,
+      appointment_time,
+      type,
+      notes,
+    } = req.body || {};
+
+    if (
+      !customer_id ||
+      !order_id ||
+      !appointment_date ||
+      !appointment_time ||
+      !type
+    ) {
+      return res.status(400).json({
+        message: "Missing required fields",
+      });
+    }
+
+    await dbPool.query(
+      `
+      INSERT INTO appointments
+      (
+        customer_id,
+        order_id,
+        appointment_date,
+        appointment_time,
+        appointment_type,
+        status,
+        notes,
+        requested_by
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        Number(customer_id),
+        Number(order_id),
+        appointment_date,
+        appointment_time,
+        type,
+        "pending",
+        notes || null,
+        "customer",
+      ]
+    );
+
+    res.status(201).json({
+      message: "Appointment request submitted successfully",
+    });
+  } catch (err) {
+    console.error("APPOINTMENT REQUEST ERROR:", err);
+    res.status(500).json({
+      message: "Server error",
+      error: String(err),
+    });
+  }
+});
+
+// ---------------- CUSTOMER OCCASION REQUEST ----------------
+app.post("/api/customer-occasion-request", async (req, res) => {
+  try {
+    const {
+      customer_id,
+      occasion_type,
+      event_date,
+      order_type,
+      notes,
+    } = req.body || {};
+
+    if (
+      !customer_id ||
+      !occasion_type ||
+      !order_type
+    ) {
+      return res.status(400).json({
+        message: "Missing required fields",
+      });
+    }
+
+    await dbPool.query(
+      `
+      INSERT INTO occasion_requests
+      (
+        customer_id,
+        occasion_type,
+        event_date,
+        order_type,
+        notes,
+        status
+      )
+      VALUES (?, ?, ?, ?, ?, ?)
+      `,
+      [
+        Number(customer_id),
+        occasion_type,
+        event_date || null,
+        order_type,
+        notes || null,
+        "pending",
+      ]
+    );
+
+    res.status(201).json({
+      message: "Occasion request submitted successfully",
+    });
+  } catch (err) {
+    console.error("OCCASION REQUEST ERROR:", err);
+
+    res.status(500).json({
+      message: "Server error",
+      error: String(err),
+    });
+  }
+});
+
+app.get("/api/occasion-requests", async (req, res) => {
+  try {
+    const [rows] = await dbPool.query(
+      `
+      SELECT
+        r.request_id,
+        r.customer_id,
+        r.occasion_type,
+        r.event_date,
+        r.order_type,
+        r.notes,
+        r.status,
+        r.admin_notes,
+        r.created_at,
+        c.first_name,
+        c.last_name,
+        c.phone,
+        c.email
+      FROM occasion_requests r
+      LEFT JOIN customers c
+        ON c.customer_id = r.customer_id
+      ORDER BY r.created_at DESC
+      `
+    );
+
+    res.json(rows);
+  } catch (err) {
+    console.error("GET OCCASION REQUESTS ERROR:", err);
+
+    res.status(500).json({
+      message: "Server error",
+      error: String(err),
+    });
+  }
+});
+
+app.put("/api/occasion-requests/:id/status", async (req, res) => {
+  try {
+    const requestId = Number(req.params.id);
+
+    const {
+      status,
+      admin_notes,
+    } = req.body || {};
+
+    if (!status) {
+      return res.status(400).json({
+        message: "Status is required",
+      });
+    }
+
+    await dbPool.query(
+      `
+      UPDATE occasion_requests
+      SET
+        status = ?,
+        admin_notes = ?
+      WHERE request_id = ?
+      `,
+      [
+        status,
+        admin_notes || null,
+        requestId,
+      ]
+    );
+
+    res.json({
+      message: "Request updated successfully",
+    });
+  } catch (err) {
+    console.error("UPDATE OCCASION REQUEST ERROR:", err);
 
     res.status(500).json({
       message: "Server error",
@@ -107,12 +534,7 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024,
   },
   fileFilter: (req, file, cb) => {
-    const allowed = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "image/gif",
-    ];
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
     if (!allowed.includes(file.mimetype)) {
       return cb(
@@ -177,10 +599,7 @@ const seamstressesRouter = createSeamstressesRouter(seamstressesController);
 
 // ---------------- API ROUTES ----------------
 app.use("/api/customers", customersRouter);
-
-// old spelling support
 app.use("/api/costumers", customersRouter);
-
 app.use("/api/dresses", dressesRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/appointments", appointmentsRouter);

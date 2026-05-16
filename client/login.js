@@ -25,10 +25,16 @@ async function login() {
       throw new Error(payload?.message || "Login failed");
     }
 
-    localStorage.setItem("aseel_token", payload.token);
-    localStorage.setItem("aseel_user", JSON.stringify(payload.user));
+    const user = payload.user;
 
-    window.location.href = "./admin/customers.html";
+    localStorage.setItem("aseel_token", payload.token);
+    localStorage.setItem("aseel_user", JSON.stringify(user));
+
+    if (user.role === "customer") {
+      window.location.href = "./customer/dashboard.html";
+    } else {
+      window.location.href = "./admin/customers.html";
+    }
   } catch (err) {
     errorBox.textContent = err.message || "Login failed";
   }
