@@ -14,6 +14,7 @@ const OrdersModel = require("./models/ordersModel");
 const AppointmentsModel = require("./models/appointmentsModel");
 const MeasurementsModel = require("./models/measurementsModel");
 const SeamstressesModel = require("./models/seamstressesModel");
+const OccasionRequestsModel = require("./models/occasionRequestsModel");
 
 // ---------------- CONTROLLERS ----------------
 const CustomersController = require("./controllers/customersController");
@@ -22,6 +23,7 @@ const OrdersController = require("./controllers/ordersController");
 const AppointmentsController = require("./controllers/appointmentsController");
 const MeasurementsController = require("./controllers/measurementsController");
 const SeamstressesController = require("./controllers/seamstressesController");
+const OccasionRequestsController = require("./controllers/occasionRequestsController");
 
 // ---------------- ROUTES ----------------
 const createCustomersRouter = require("./routes/customersRoutes");
@@ -30,6 +32,7 @@ const createOrdersRouter = require("./routes/ordersRoutes");
 const createAppointmentsRouter = require("./routes/appointmentsRoutes");
 const createMeasurementsRouter = require("./routes/measurementsRoutes");
 const createSeamstressesRouter = require("./routes/seamstressesRoutes");
+const createOccasionRequestsRouter = require("./routes/occasionRequestsRoutes");
 
 const app = express();
 
@@ -49,6 +52,7 @@ app.get("/api/db-test", async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error("DB TEST ERROR:", err);
+
     res.status(500).json({
       message: "DB connection failed",
       error: String(err),
@@ -92,6 +96,7 @@ app.post("/api/login", async (req, res) => {
     });
   } catch (err) {
     console.error("LOGIN ERROR:", err);
+
     res.status(500).json({
       message: "Server error",
       error: String(err),
@@ -99,7 +104,125 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// ---------------- CUSTOMER DASHBOARD API ----------------
+// ---------------- REGISTER CUSTOMER ----------------
+app.post("/api/register", async (req, res) => {
+  const connection = await dbPool.getConnection();
+
+  try {
+    const {
+      first_name,
+      last_name,
+      city,
+      phone,
+      birth_date,
+      email,
+      password,
+      source_type,
+      source_details,
+    } = req.body || {};
+
+    if (!first_name || !last_name || !phone || !email || !password) {
+      return res.status(400).json({
+        message: "First name, last name, phone, email and password are required",
+      });
+    }
+
+    await connection.beginTransaction();
+
+    const [existingUsers] = await connection.query(
+      `SELECT user_id FROM users WHERE email = ? LIMIT 1`,
+      [String(email).trim()]
+    );
+
+    if (existingUsers.length) {
+      await connection.rollback();
+      return res.status(409).json({
+        message: "Email already exists",
+      });
+    }
+
+    const [customerResult] = await connection.query(
+      `
+      INSERT INTO customers
+      (
+        first_name,
+        last_name,
+        city,
+        phone,
+        birth_date,
+        email,
+        source_type,
+        source_details
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        String(first_name).trim(),
+        String(last_name).trim(),
+        city ? String(city).trim() : null,
+        String(phone).trim(),
+        birth_date || null,
+        String(email).trim(),
+        source_type || null,
+        source_details || null,
+      ]
+    );
+
+    const customerId = customerResult.insertId;
+
+    const fullName = `${first_name} ${last_name}`.trim();
+
+    const [userResult] = await connection.query(
+      `
+      INSERT INTO users
+      (
+        email,
+        password,
+        name,
+        role,
+        customer_id
+      )
+      VALUES (?, ?, ?, ?, ?)
+      `,
+      [
+        String(email).trim(),
+        String(password),
+        fullName,
+        "customer",
+        customerId,
+      ]
+    );
+
+    await connection.commit();
+
+    const user = {
+      user_id: userResult.insertId,
+      email: String(email).trim(),
+      name: fullName,
+      role: "customer",
+      customer_id: customerId,
+    };
+
+    res.status(201).json({
+      message: "Registration successful",
+      token: `aseel_user_${user.user_id}`,
+      user,
+    });
+  } catch (err) {
+    await connection.rollback();
+
+    console.error("REGISTER ERROR:", err);
+
+    res.status(500).json({
+      message: "Server error",
+      error: String(err),
+    });
+  } finally {
+    connection.release();
+  }
+});
+
+// ---------------- CUSTOMER DASHBOARD ----------------
 app.get("/api/customer-dashboard/:customerId", async (req, res) => {
   try {
     const customerId = Number(req.params.customerId);
@@ -112,7 +235,13 @@ app.get("/api/customer-dashboard/:customerId", async (req, res) => {
 
     const [[customer]] = await dbPool.query(
       `
-      SELECT customer_id, first_name, last_name, email, phone, city
+      SELECT
+        customer_id,
+        first_name,
+        last_name,
+        email,
+        phone,
+        city
       FROM customers
       WHERE customer_id = ?
       `,
@@ -137,15 +266,24 @@ app.get("/api/customer-dashboard/:customerId", async (req, res) => {
         o.return_date,
         o.total_price,
         o.status,
+
         d.dress_name,
         d.size,
         d.color,
         d.image_url,
+
         COALESCE(SUM(p.amount), 0) AS paid_amount
+
       FROM orders o
-      LEFT JOIN dresses d ON d.dress_id = o.dress_id
-      LEFT JOIN payments p ON p.order_id = o.order_id
+
+      LEFT JOIN dresses d
+        ON d.dress_id = o.dress_id
+
+      LEFT JOIN payments p
+        ON p.order_id = o.order_id
+
       WHERE o.customer_id = ?
+
       GROUP BY
         o.order_id,
         o.customer_id,
@@ -160,6 +298,7 @@ app.get("/api/customer-dashboard/:customerId", async (req, res) => {
         d.size,
         d.color,
         d.image_url
+
       ORDER BY o.order_id DESC
       `,
       [customerId]
@@ -207,7 +346,8 @@ app.get("/api/customer-dashboard/:customerId", async (req, res) => {
           appointment_time,
           appointment_type AS type,
           status,
-          notes
+          notes,
+          requested_by
         FROM appointments
         WHERE order_id IN (${placeholders})
         ORDER BY appointment_date DESC, appointment_time DESC
@@ -255,17 +395,24 @@ app.get("/api/customer-dashboard/:customerId", async (req, res) => {
 
       return {
         ...order,
+
+        dress_name: order.dress_name || "Not assigned yet",
+
         total_price: totalPrice,
         paid_amount: paidAmount,
+
         remaining_amount: Math.max(totalPrice - paidAmount, 0),
+
         payment_status:
           paidAmount <= 0
             ? "unpaid"
             : paidAmount < totalPrice
-              ? "partial"
-              : "paid",
+            ? "partial"
+            : "paid",
+
         measurements: orderMeasurements,
         appointments: orderAppointments,
+
         payments: orderPayments.map((p) => ({
           ...p,
           amount: Number(p.amount || 0),
@@ -279,6 +426,7 @@ app.get("/api/customer-dashboard/:customerId", async (req, res) => {
     });
   } catch (err) {
     console.error("CUSTOMER DASHBOARD ERROR:", err);
+
     res.status(500).json({
       message: "Server error",
       error: String(err),
@@ -321,6 +469,7 @@ app.post("/api/customer-feedback", async (req, res) => {
     });
   } catch (err) {
     console.error("FEEDBACK ERROR:", err);
+
     res.status(500).json({
       message: "Server error",
       error: String(err),
@@ -349,6 +498,26 @@ app.post("/api/customer-appointment-request", async (req, res) => {
     ) {
       return res.status(400).json({
         message: "Missing required fields",
+      });
+    }
+
+    const [existingPending] = await dbPool.query(
+      `
+      SELECT appointment_id
+      FROM appointments
+      WHERE order_id = ?
+        AND customer_id = ?
+        AND status = 'pending'
+        AND requested_by = 'customer'
+      LIMIT 1
+      `,
+      [Number(order_id), Number(customer_id)]
+    );
+
+    if (existingPending.length) {
+      return res.status(400).json({
+        message:
+          "You already have a pending appointment request for this order.",
       });
     }
 
@@ -384,141 +553,6 @@ app.post("/api/customer-appointment-request", async (req, res) => {
     });
   } catch (err) {
     console.error("APPOINTMENT REQUEST ERROR:", err);
-    res.status(500).json({
-      message: "Server error",
-      error: String(err),
-    });
-  }
-});
-
-// ---------------- CUSTOMER OCCASION REQUEST ----------------
-app.post("/api/customer-occasion-request", async (req, res) => {
-  try {
-    const {
-      customer_id,
-      occasion_type,
-      event_date,
-      order_type,
-      notes,
-    } = req.body || {};
-
-    if (
-      !customer_id ||
-      !occasion_type ||
-      !order_type
-    ) {
-      return res.status(400).json({
-        message: "Missing required fields",
-      });
-    }
-
-    await dbPool.query(
-      `
-      INSERT INTO occasion_requests
-      (
-        customer_id,
-        occasion_type,
-        event_date,
-        order_type,
-        notes,
-        status
-      )
-      VALUES (?, ?, ?, ?, ?, ?)
-      `,
-      [
-        Number(customer_id),
-        occasion_type,
-        event_date || null,
-        order_type,
-        notes || null,
-        "pending",
-      ]
-    );
-
-    res.status(201).json({
-      message: "Occasion request submitted successfully",
-    });
-  } catch (err) {
-    console.error("OCCASION REQUEST ERROR:", err);
-
-    res.status(500).json({
-      message: "Server error",
-      error: String(err),
-    });
-  }
-});
-
-app.get("/api/occasion-requests", async (req, res) => {
-  try {
-    const [rows] = await dbPool.query(
-      `
-      SELECT
-        r.request_id,
-        r.customer_id,
-        r.occasion_type,
-        r.event_date,
-        r.order_type,
-        r.notes,
-        r.status,
-        r.admin_notes,
-        r.created_at,
-        c.first_name,
-        c.last_name,
-        c.phone,
-        c.email
-      FROM occasion_requests r
-      LEFT JOIN customers c
-        ON c.customer_id = r.customer_id
-      ORDER BY r.created_at DESC
-      `
-    );
-
-    res.json(rows);
-  } catch (err) {
-    console.error("GET OCCASION REQUESTS ERROR:", err);
-
-    res.status(500).json({
-      message: "Server error",
-      error: String(err),
-    });
-  }
-});
-
-app.put("/api/occasion-requests/:id/status", async (req, res) => {
-  try {
-    const requestId = Number(req.params.id);
-
-    const {
-      status,
-      admin_notes,
-    } = req.body || {};
-
-    if (!status) {
-      return res.status(400).json({
-        message: "Status is required",
-      });
-    }
-
-    await dbPool.query(
-      `
-      UPDATE occasion_requests
-      SET
-        status = ?,
-        admin_notes = ?
-      WHERE request_id = ?
-      `,
-      [
-        status,
-        admin_notes || null,
-        requestId,
-      ]
-    );
-
-    res.json({
-      message: "Request updated successfully",
-    });
-  } catch (err) {
-    console.error("UPDATE OCCASION REQUEST ERROR:", err);
 
     res.status(500).json({
       message: "Server error",
@@ -530,11 +564,18 @@ app.put("/api/occasion-requests/:id/status", async (req, res) => {
 // ---------------- IMAGE UPLOAD ----------------
 const upload = multer({
   storage: multer.memoryStorage(),
+
   limits: {
     fileSize: 5 * 1024 * 1024,
   },
+
   fileFilter: (req, file, cb) => {
-    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    const allowed = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+    ];
 
     if (!allowed.includes(file.mimetype)) {
       return cb(
@@ -597,14 +638,25 @@ const seamstressesModel = new SeamstressesModel(dbPool);
 const seamstressesController = new SeamstressesController(seamstressesModel);
 const seamstressesRouter = createSeamstressesRouter(seamstressesController);
 
+const occasionRequestsModel = new OccasionRequestsModel(dbPool);
+
+const occasionRequestsController =
+  new OccasionRequestsController(occasionRequestsModel);
+
+const occasionRequestsRouter =
+  createOccasionRequestsRouter(occasionRequestsController);
+
 // ---------------- API ROUTES ----------------
 app.use("/api/customers", customersRouter);
 app.use("/api/costumers", customersRouter);
+
 app.use("/api/dresses", dressesRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/appointments", appointmentsRouter);
 app.use("/api/measurements", measurementsRouter);
 app.use("/api/seamstresses", seamstressesRouter);
+
+app.use("/api", occasionRequestsRouter);
 
 // ---------------- STATIC ----------------
 const rootPath = path.join(__dirname, "..");

@@ -4,118 +4,341 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <title>Aseel L'Atelier - Customers</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  >
+
   <link href="../shared/theme.css" rel="stylesheet">
-<script src="../shared/config.js"></script>
-<script src="../shared/auth.js"></script>
+
+  <script src="../shared/config.js"></script>
+  <script src="../shared/auth.js"></script>
+
   <script>
     requireAuth();
   </script>
 </head>
 
 <body>
+
   <div class="container py-4 py-md-5">
 
     <div id="sharedNav"></div>
 
     <div class="mb-4">
-      <h1 class="hero-title mb-2">Customers</h1>
-      <p class="hero-sub mb-0">Manage bridal clients, contact details, city, and personal details.</p>
+      <h1 class="hero-title mb-2">
+        Customers
+      </h1>
+
+      <p class="hero-sub mb-0">
+        Manage bridal clients, personal details and customer information.
+      </p>
     </div>
 
+    <!-- SEARCH -->
+
     <div class="card card-luxe mb-4">
+
       <div class="card-body">
+
         <div class="row g-3 align-items-end">
+
           <div class="col-lg-6">
-            <label class="label-soft">Search (name / city / phone / email)</label>
-            <input id="searchInput" class="form-control" placeholder="Search..." />
+            <label class="label-soft">
+              Search (name / city / phone / email)
+            </label>
+
+            <input
+              id="searchInput"
+              class="form-control"
+              placeholder="Search..."
+            />
           </div>
 
           <div class="col-lg-3 d-grid">
-            <button id="searchBtn" class="btn btn-primary">Search</button>
+            <button
+              id="searchBtn"
+              class="btn btn-primary"
+            >
+              Search
+            </button>
           </div>
 
           <div class="col-lg-3 d-grid">
-            <button id="resetBtn" class="btn btn-outline-secondary">Reset</button>
+            <button
+              id="resetBtn"
+              class="btn btn-outline-secondary"
+            >
+              Reset
+            </button>
           </div>
+
         </div>
 
         <div class="mt-3 small-muted">
-          API: <span id="apiUrlText">/api/customers</span>
+          API:
+          <span id="apiUrlText">
+            /api/customers
+          </span>
         </div>
+
       </div>
     </div>
+
+    <!-- FORM -->
 
     <div class="card card-luxe mb-4">
-      <div class="card-header">Customer Details</div>
+
+      <div class="card-header">
+        Customer Details
+      </div>
+
       <div class="card-body">
+
         <form id="customerForm" class="row g-3">
-          <input type="hidden" id="customer_id" />
+
+          <input
+            type="hidden"
+            id="customer_id"
+          />
+
+          <!-- FIRST NAME -->
 
           <div class="col-md-4">
-            <label class="label-soft">First Name *</label>
-            <input id="first_name" class="form-control" required />
+
+            <label class="label-soft">
+              First Name *
+            </label>
+
+            <input
+              id="first_name"
+              class="form-control"
+              required
+            />
+
           </div>
 
-          <div class="col-md-4">
-            <label class="label-soft">Last Name *</label>
-            <input id="last_name" class="form-control" required />
-          </div>
+          <!-- LAST NAME -->
 
           <div class="col-md-4">
-            <label class="label-soft">City</label>
-            <input id="city" class="form-control" />
+
+            <label class="label-soft">
+              Last Name *
+            </label>
+
+            <input
+              id="last_name"
+              class="form-control"
+              required
+            />
+
           </div>
+
+          <!-- CITY -->
+
+          <div class="col-md-4">
+
+            <label class="label-soft">
+              City
+            </label>
+
+            <input
+              id="city"
+              class="form-control"
+            />
+
+          </div>
+
+          <!-- PHONE -->
 
           <div class="col-md-6">
-            <label class="label-soft">Phone *</label>
-            <input id="phone" class="form-control" required />
+
+            <label class="label-soft">
+              Phone *
+            </label>
+
+            <input
+              id="phone"
+              class="form-control"
+              required
+            />
+
           </div>
 
+          <!-- EMAIL -->
+
           <div class="col-md-6">
-            <label class="label-soft">Email</label>
-            <input id="email" type="email" class="form-control" />
+
+            <label class="label-soft">
+              Email
+            </label>
+
+            <input
+              id="email"
+              type="email"
+              class="form-control"
+            />
+
+          </div>
+
+          <!-- BIRTH DATE -->
+
+          <div class="col-md-6">
+
+            <label class="label-soft">
+              Birth Date
+            </label>
+
+            <input
+              id="birth_date"
+              type="date"
+              class="form-control"
+            />
+
+          </div>
+
+          <!-- SOURCE -->
+
+          <div class="col-md-6">
+
+            <label class="label-soft">
+              How did she know us?
+            </label>
+
+            <select
+              id="source_type"
+              class="form-select"
+            >
+
+              <option value="">
+                Select
+              </option>
+
+              <option value="friend">
+                Friend
+              </option>
+
+              <option value="instagram">
+                Instagram
+              </option>
+
+              <option value="previous_experience">
+                Previous Experience
+              </option>
+
+              <option value="other">
+                Other
+              </option>
+
+            </select>
+
+          </div>
+
+          <!-- OTHER DETAILS -->
+
+          <div
+            class="col-12"
+            id="sourceDetailsWrap"
+            style="display:none;"
+          >
+
+            <label class="label-soft">
+              Other Details
+            </label>
+
+            <input
+              id="source_details"
+              class="form-control"
+              placeholder="Write details..."
+            />
+
+          </div>
+
+          <!-- BUTTONS -->
+
+          <div class="col-md-6 d-grid">
+
+            <button
+              class="btn btn-primary"
+              type="submit"
+            >
+              Save
+            </button>
+
           </div>
 
           <div class="col-md-6 d-grid">
-            <button class="btn btn-primary" type="submit">Save</button>
+
+            <button
+              id="cancelEditBtn"
+              type="button"
+              class="btn btn-outline-secondary"
+            >
+              Cancel Edit
+            </button>
+
           </div>
 
-          <div class="col-md-6 d-grid">
-            <button id="cancelEditBtn" type="button" class="btn btn-outline-secondary">Cancel Edit</button>
-          </div>
         </form>
+
       </div>
     </div>
 
+    <!-- TABLE -->
+
     <div class="card card-luxe">
+
       <div class="card-header d-flex align-items-center justify-content-between">
-        <span>Customers</span>
-        <span class="badge-soft px-3 py-2 rounded-pill" id="customersCount">0 customers</span>
+
+        <span>
+          Customers
+        </span>
+
+        <span
+          class="badge-soft px-3 py-2 rounded-pill"
+          id="customersCount"
+        >
+          0 customers
+        </span>
+
       </div>
 
       <div class="card-body table-responsive">
+
         <table class="table align-middle">
+
           <thead>
+
             <tr>
               <th>#</th>
               <th>Name</th>
               <th>Phone</th>
               <th>City</th>
               <th>Email</th>
-              <th style="width:220px;">Actions</th>
+              <th>Source</th>
+              <th style="width:220px;">
+                Actions
+              </th>
             </tr>
+
           </thead>
+
           <tbody id="customersTbody"></tbody>
+
         </table>
+
       </div>
     </div>
 
   </div>
 
-<script src="../shared/nav.js"></script>
+  <script src="../shared/nav.js"></script>
+
   <script src="customers.js"></script>
+
 </body>
 
 </html>

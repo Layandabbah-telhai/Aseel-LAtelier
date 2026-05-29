@@ -16,6 +16,7 @@
     { href: "measurements.html", label: "Measurements" },
     { href: "payments.html", label: "Payments" },
     { href: "seamstresses.html", label: "Seamstresses" },
+    { href: "occasion-requests.html", label: "Occasion Requests" },
   ];
 
   let userName = "";

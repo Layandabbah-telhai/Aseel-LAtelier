@@ -4,9 +4,10 @@ function normalizeInput(body) {
     last_name: String(body?.last_name || "").trim(),
     city: String(body?.city || "").trim(),
     phone: String(body?.phone || "").trim(),
-    event_date: body?.event_date ? String(body.event_date) : null,
     birth_date: body?.birth_date ? String(body.birth_date) : null,
     email: body?.email ? String(body.email).trim() : null,
+    source_type: body?.source_type ? String(body.source_type).trim() : null,
+    source_details: body?.source_details ? String(body.source_details).trim() : null,
   };
 }
 
@@ -20,6 +21,8 @@ function validate(data) {
   if (data.city.length > 100) return "city too long";
   if (data.phone.length > 20) return "phone too long";
   if (data.email && data.email.length > 100) return "email too long";
+  if (data.source_type && data.source_type.length > 50) return "source_type too long";
+  if (data.source_details && data.source_details.length > 255) return "source_details too long";
 
   return null;
 }
@@ -52,12 +55,16 @@ class CustomersController {
   async get(req, res) {
     try {
       const id = Number(req.params.id);
+
       if (!Number.isFinite(id)) {
         return res.status(400).json({ message: "Invalid id" });
       }
 
       const row = await this.model.getById(id);
-      if (!row) return res.status(404).json({ message: "Not found" });
+
+      if (!row) {
+        return res.status(404).json({ message: "Not found" });
+      }
 
       res.json(row);
     } catch (err) {
@@ -69,16 +76,23 @@ class CustomersController {
   async create(req, res) {
     try {
       const data = normalizeInput(req.body);
+
       const errMsg = validate(data);
-      if (errMsg) return res.status(400).json({ message: errMsg });
+
+      if (errMsg) {
+        return res.status(400).json({ message: errMsg });
+      }
 
       const created = await this.model.create(data);
+
       res.status(201).json(created);
     } catch (err) {
       console.error("CUSTOMERS CREATE ERROR:", err);
+
       if (isDuplicatePhoneError(err)) {
         return res.status(409).json({ message: "Phone already exists" });
       }
+
       res.status(500).json({ message: "Server error", error: String(err) });
     }
   }
@@ -86,23 +100,33 @@ class CustomersController {
   async update(req, res) {
     try {
       const id = Number(req.params.id);
+
       if (!Number.isFinite(id)) {
         return res.status(400).json({ message: "Invalid id" });
       }
 
       const data = normalizeInput(req.body);
+
       const errMsg = validate(data);
-      if (errMsg) return res.status(400).json({ message: errMsg });
+
+      if (errMsg) {
+        return res.status(400).json({ message: errMsg });
+      }
 
       const updated = await this.model.update(id, data);
-      if (!updated) return res.status(404).json({ message: "Not found" });
+
+      if (!updated) {
+        return res.status(404).json({ message: "Not found" });
+      }
 
       res.json(updated);
     } catch (err) {
       console.error("CUSTOMERS UPDATE ERROR:", err);
+
       if (isDuplicatePhoneError(err)) {
         return res.status(409).json({ message: "Phone already exists" });
       }
+
       res.status(500).json({ message: "Server error", error: String(err) });
     }
   }
@@ -110,12 +134,16 @@ class CustomersController {
   async remove(req, res) {
     try {
       const id = Number(req.params.id);
+
       if (!Number.isFinite(id)) {
         return res.status(400).json({ message: "Invalid id" });
       }
 
       const ok = await this.model.remove(id);
-      if (!ok) return res.status(404).json({ message: "Not found" });
+
+      if (!ok) {
+        return res.status(404).json({ message: "Not found" });
+      }
 
       res.json({ message: "Deleted" });
     } catch (err) {

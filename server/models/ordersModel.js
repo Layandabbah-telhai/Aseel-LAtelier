@@ -62,7 +62,7 @@ class OrdersModel {
       JOIN \`${this.customersTable}\` c
         ON c.customer_id = o.customer_id
 
-      JOIN \`${this.dressesTable}\` d
+      LEFT JOIN \`${this.dressesTable}\` d
         ON d.dress_id = o.dress_id
 
       LEFT JOIN \`${this.paymentsTable}\` p
@@ -93,6 +93,9 @@ class OrdersModel {
 
     return rows.map((row) => ({
       ...row,
+
+      dress_name: row.dress_name || "Not assigned yet",
+
       paid_amount: Number(row.paid_amount || 0),
       total_price: Number(row.total_price || 0),
 
@@ -100,8 +103,8 @@ class OrdersModel {
         Number(row.paid_amount || 0) <= 0
           ? "unpaid"
           : Number(row.paid_amount || 0) < Number(row.total_price || 0)
-          ? "partial"
-          : "paid",
+            ? "partial"
+            : "paid",
     }));
   }
 
@@ -155,8 +158,8 @@ class OrdersModel {
         Number(row.paid_amount || 0) <= 0
           ? "unpaid"
           : Number(row.paid_amount || 0) < Number(row.total_price || 0)
-          ? "partial"
-          : "paid",
+            ? "partial"
+            : "paid",
     };
   }
 
@@ -178,7 +181,7 @@ class OrdersModel {
       `,
       [
         data.customer_id,
-        data.dress_id,
+        data.dress_id || null,
         data.order_type,
         data.occasion_type || null,
         data.order_date,
@@ -208,7 +211,7 @@ class OrdersModel {
       `,
       [
         data.customer_id,
-        data.dress_id,
+        data.dress_id || null,
         data.order_type,
         data.occasion_type || null,
         data.order_date,

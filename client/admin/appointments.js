@@ -1,174 +1,428 @@
-const API_BASE = window.CONFIG?.API_BASE || "http://localhost:4000/api";
+const API_BASE = window.CONFIG?.API_BASE || "https://aseel-latelier.onrender.com/api";
 const ENDPOINT = `${API_BASE}/appointments`;
-const CUSTOMERS_ENDPOINT = `${API_BASE}/customers`;
-const ORDERS_ENDPOINT = `${API_BASE}/orders`;
 
-const params = new URLSearchParams(window.location.search);
-const urlOrderId = params.get("order_id");
+const appointmentIdInput = document.getElementById("appointment_id");
+const customerSelect = document.getElementById("customer_id");
+const orderSelect = document.getElementById("order_id");
+const appointmentTypeInput = document.getElementById("appointment_type");
+const appointmentDateInput = document.getElementById("appointment_date");
+const appointmentTimeInput = document.getElementById("appointment_time");
+const statusInput = document.getElementById("status");
+const notesInput = document.getElementById("notes");
 
-const tbody = document.getElementById("appointmentsTbody");
-const count = document.getElementById("appointmentsCount");
-const apiText = document.getElementById("apiUrlText");
-const orderSummary = document.getElementById("orderSummary");
-const form = document.getElementById("appointmentForm");
-const cancelEditBtn = document.getElementById("cancelEditBtn");
-
-const appointmentId = document.getElementById("appointment_id");
-const customerId = document.getElementById("customer_id");
-const orderId = document.getElementById("order_id");
-const appointmentType = document.getElementById("appointment_type");
-const appointmentDate = document.getElementById("appointment_date");
-const appointmentTime = document.getElementById("appointment_time");
-const statusField = document.getElementById("status");
-const notes = document.getElementById("notes");
+const appointmentForm = document.getElementById("appointmentForm");
 const searchInput = document.getElementById("searchInput");
 const statusFilter = document.getElementById("statusFilter");
 const searchBtn = document.getElementById("searchBtn");
 const resetBtn = document.getElementById("resetBtn");
+const cancelEditBtn = document.getElementById("cancelEditBtn");
 
-let customersCache = [];
-let ordersCache = [];
-let appointmentsCache = [];
+const appointmentsTbody =
+  document.getElementById("appointmentsTbody");
 
-if (apiText) apiText.textContent = urlOrderId ? `${ENDPOINT}?order_id=${urlOrderId}` : ENDPOINT;
+const appointmentsCount =
+  document.getElementById("appointmentsCount");
 
-function escapeHtml(value) { return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;"); }
-function formatDate(value) { return value ? String(value).slice(0, 10) : ""; }
-function formatTime(value) { return value ? String(value).slice(0, 5) : ""; }
-async function fetchJson(url, options = {}) { const res = await fetch(url, options); const payload = await res.json().catch(() => null); if (!res.ok) throw new Error(payload?.message || `Request failed (${res.status})`); return payload; }
+let customers = [];
+let orders = [];
+let appointments = [];
 
-async function loadCustomers() {
-  customersCache = await fetchJson(CUSTOMERS_ENDPOINT);
-  customerId.innerHTML = `<option value="">Select customer...</option>` + customersCache.map(c => `
-    <option value="${escapeHtml(c.customer_id)}">${escapeHtml(c.first_name)} ${escapeHtml(c.last_name)}</option>
-  `).join("");
+/*
+IMPORTANT:
+Do NOT use:
+new Date(value).toISOString()
+
+because timezone shifts
+the date one day backward.
+*/
+function dateOnly(value) {
+  if (!value) return "";
+
+  if (typeof value === "string") {
+    return value.slice(0, 10);
+  }
+
+  return "";
 }
 
-function renderOrderOptions() {
-  const selectedCustomerId = customerId.value;
-  const filtered = selectedCustomerId ? ordersCache.filter(o => String(o.customer_id) === String(selectedCustomerId)) : ordersCache;
-  orderId.innerHTML = `<option value="">No order / general appointment</option>` + filtered.map(o => `
-    <option value="${escapeHtml(o.order_id)}">#${escapeHtml(o.order_id)} - ${escapeHtml(o.first_name || "")} ${escapeHtml(o.last_name || "")} - ${escapeHtml(o.dress_name || "")}</option>
-  `).join("");
-  if (urlOrderId) orderId.value = urlOrderId;
+function text(value) {
+  return value === null ||
+    value === undefined ||
+    value === ""
+    ? "-"
+    : String(value);
+}
+
+async function fetchJson(url, options = {}) {
+  const res = await fetch(url, options);
+
+  const data = await res
+    .json()
+    .catch(() => null);
+
+  if (!res.ok) {
+    throw new Error(
+      data?.message ||
+      data?.error ||
+      "Request failed"
+    );
+  }
+
+  return data;
+}
+
+async function loadCustomers() {
+  customers = await fetchJson(
+    `${API_BASE}/customers`
+  );
+
+  customerSelect.innerHTML = customers
+    .map((c) => {
+      const name =
+        `${c.first_name || ""} ${c.last_name || ""}`.trim();
+
+      return `
+        <option value="${c.customer_id}">
+          ${name || `Customer #${c.customer_id}`}
+        </option>
+      `;
+    })
+    .join("");
 }
 
 async function loadOrders() {
-  ordersCache = await fetchJson(ORDERS_ENDPOINT);
-  if (urlOrderId) {
-    const selected = ordersCache.find(o => String(o.order_id) === String(urlOrderId));
-    if (selected) customerId.value = selected.customer_id;
-  }
-  renderOrderOptions();
-  renderOrderSummary();
-}
+  orders = await fetchJson(
+    `${API_BASE}/orders`
+  );
 
-function renderOrderSummary() {
-  if (!orderSummary) return;
-  if (!urlOrderId) { orderSummary.innerHTML = `<div><strong>All Appointments</strong></div><div>Create appointments for any customer or order.</div>`; return; }
-  const order = ordersCache.find(o => String(o.order_id) === String(urlOrderId));
-  if (!order) return orderSummary.innerHTML = `<div class="text-danger">Selected order was not found.</div>`;
-  orderSummary.innerHTML = `<div><strong>Selected Order #${escapeHtml(order.order_id)}</strong></div><div>Customer: ${escapeHtml(order.first_name || "")} ${escapeHtml(order.last_name || "")}</div><div>Dress: ${escapeHtml(order.dress_name || "")}</div>`;
+  orderSelect.innerHTML =
+    `<option value="">No order</option>` +
+    orders
+      .map((o) => {
+        const customerName =
+          o.customer_name ||
+          `${o.first_name || ""} ${o.last_name || ""}`.trim();
+
+        const label =
+          `#${o.order_id} - ${customerName || "Customer"} - ${o.dress_name || "No dress"}`;
+
+        return `
+          <option value="${o.order_id}">
+            ${label}
+          </option>
+        `;
+      })
+      .join("");
 }
 
 async function loadAppointments() {
-  try {
-    let url = ENDPOINT;
-    const q = new URLSearchParams();
-    if (urlOrderId) q.set("order_id", urlOrderId);
-    if (searchInput?.value.trim()) q.set("search", searchInput.value.trim());
-    if (statusFilter?.value) q.set("status", statusFilter.value);
-    const qs = q.toString();
-    if (qs) url += `?${qs}`;
-    const data = await fetchJson(url);
-    appointmentsCache = Array.isArray(data) ? data : [];
-    renderAppointments(appointmentsCache);
-  } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="11" class="text-center text-danger">${escapeHtml(err.message)}</td></tr>`;
-    count.textContent = "0 appointments";
+  const params = new URLSearchParams();
+
+  if (searchInput.value.trim()) {
+    params.set(
+      "search",
+      searchInput.value.trim()
+    );
   }
+
+  if (statusFilter.value) {
+    params.set(
+      "status",
+      statusFilter.value
+    );
+  }
+
+  const url = params.toString()
+    ? `${ENDPOINT}?${params.toString()}`
+    : ENDPOINT;
+
+  appointments = await fetchJson(url);
+
+  renderAppointments();
 }
 
-function renderAppointments(rows) {
-  count.textContent = `${rows.length} appointment${rows.length === 1 ? "" : "s"}`;
-  if (!rows.length) { tbody.innerHTML = `<tr><td colspan="11" class="text-center text-muted">No appointments found</td></tr>`; return; }
-  tbody.innerHTML = rows.map(a => `
-    <tr>
-      <td>${escapeHtml(a.appointment_id)}</td>
-      <td>${a.order_id ? `<a href="appointments.html?order_id=${encodeURIComponent(a.order_id)}">#${escapeHtml(a.order_id)}</a>` : "-"}</td>
-      <td>${escapeHtml(a.first_name || "")} ${escapeHtml(a.last_name || "")}</td>
-      <td>${escapeHtml(a.phone || "")}</td>
-      <td>${escapeHtml(a.dress_name || "")}</td>
-      <td>${escapeHtml(a.appointment_type || "")}</td>
-      <td>${escapeHtml(formatDate(a.appointment_date))}</td>
-      <td>${escapeHtml(formatTime(a.appointment_time))}</td>
-      <td>${escapeHtml(a.status || "")}</td>
-      <td>${escapeHtml(a.notes || "")}</td>
-      <td><button onclick="editAppointment(${Number(a.appointment_id)})" class="btn btn-sm btn-outline-primary">Edit</button> <button onclick="deleteAppointment(${Number(a.appointment_id)})" class="btn btn-sm btn-outline-danger">Delete</button></td>
-    </tr>
-  `).join("");
+function renderAppointments() {
+  appointmentsCount.textContent =
+    `${appointments.length} appointments`;
+
+  if (!appointments.length) {
+    appointmentsTbody.innerHTML = `
+      <tr>
+        <td colspan="11" class="text-center py-4">
+          No appointments found.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  appointmentsTbody.innerHTML =
+    appointments
+      .map((a) => `
+        <tr>
+          <td>${a.appointment_id}</td>
+
+          <td>
+            ${text(
+              a.customer_name ||
+              `${a.first_name || ""} ${a.last_name || ""}`.trim()
+            )}
+          </td>
+
+          <td>${text(a.phone)}</td>
+
+          <td>
+            ${a.order_id
+              ? `#${a.order_id}`
+              : "-"}
+          </td>
+
+          <td>${text(a.dress_name)}</td>
+
+          <td>
+            ${text(
+              a.appointment_type ||
+              a.type
+            )}
+          </td>
+
+          <td>
+            ${dateOnly(
+              a.appointment_date
+            )}
+          </td>
+
+          <td>
+            ${text(
+              a.appointment_time
+                ? String(a.appointment_time).slice(0, 5)
+                : ""
+            )}
+          </td>
+
+          <td>${text(a.status)}</td>
+
+          <td>${text(a.notes)}</td>
+
+          <td>
+            <button
+              class="btn btn-sm btn-outline-primary me-1"
+              onclick="editAppointment(${a.appointment_id})"
+            >
+              Edit
+            </button>
+
+            <button
+              class="btn btn-sm btn-outline-danger"
+              onclick="deleteAppointment(${a.appointment_id})"
+            >
+              Delete
+            </button>
+          </td>
+        </tr>
+      `)
+      .join("");
+}
+
+function clearForm() {
+  appointmentIdInput.value = "";
+
+  appointmentForm.reset();
+
+  appointmentDateInput.value =
+    dateOnly(
+      new Date().toISOString()
+    );
+
+  statusInput.value = "Scheduled";
+
+  appointmentTypeInput.value =
+    "Consultation";
 }
 
 window.editAppointment = function (id) {
-  const a = appointmentsCache.find(x => String(x.appointment_id) === String(id));
-  if (!a) return alert("Appointment not found");
-  appointmentId.value = a.appointment_id || "";
-  customerId.value = a.customer_id || "";
-  renderOrderOptions();
-  orderId.value = a.order_id || "";
-  appointmentType.value = a.appointment_type || "Consultation";
-  appointmentDate.value = formatDate(a.appointment_date);
-  appointmentTime.value = formatTime(a.appointment_time);
-  statusField.value = a.status || "Scheduled";
-  notes.value = a.notes || "";
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  const appointment =
+    appointments.find(
+      (a) =>
+        Number(a.appointment_id) ===
+        Number(id)
+    );
+
+  if (!appointment) return;
+
+  appointmentIdInput.value =
+    appointment.appointment_id;
+
+  customerSelect.value =
+    appointment.customer_id || "";
+
+  orderSelect.value =
+    appointment.order_id || "";
+
+  appointmentTypeInput.value =
+    appointment.appointment_type ||
+    appointment.type ||
+    "Consultation";
+
+  appointmentDateInput.value =
+    dateOnly(
+      appointment.appointment_date
+    );
+
+  appointmentTimeInput.value =
+    appointment.appointment_time
+      ? String(
+          appointment.appointment_time
+        ).slice(0, 5)
+      : "";
+
+  statusInput.value =
+    appointment.status ||
+    "Scheduled";
+
+  notesInput.value =
+    appointment.notes || "";
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
 };
 
-window.deleteAppointment = async function (id) {
-  if (!confirm("Delete appointment?")) return;
-  try { await fetchJson(`${ENDPOINT}/${id}`, { method: "DELETE" }); await loadAppointments(); }
-  catch (err) { alert(err.message || "Delete failed"); }
+window.deleteAppointment =
+  async function (id) {
+
+  if (
+    !confirm(
+      "Delete this appointment?"
+    )
+  ) {
+    return;
+  }
+
+  try {
+    await fetchJson(
+      `${ENDPOINT}/${id}`,
+      {
+        method: "DELETE"
+      }
+    );
+
+    await loadAppointments();
+
+  } catch (err) {
+    alert(err.message);
+  }
 };
 
-form?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  if (!customerId.value) return alert("Please select a customer");
-  if (!appointmentDate.value) return alert("Appointment date is required");
-  const data = {
-    customer_id: customerId.value,
-    order_id: orderId.value || null,
-    appointment_type: appointmentType.value,
-    appointment_date: appointmentDate.value,
-    appointment_time: appointmentTime.value || null,
-    status: statusField.value,
-    notes: notes.value.trim(),
-  };
-  const id = appointmentId.value;
-  const method = id ? "PUT" : "POST";
-  const url = id ? `${ENDPOINT}/${id}` : ENDPOINT;
-  try { await fetchJson(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); clearForm(); await loadAppointments(); }
-  catch (err) { alert(err.message || "Save failed"); }
-});
+appointmentForm.addEventListener(
+  "submit",
+  async (e) => {
 
-function clearForm() {
-  appointmentId.value = "";
-  form.reset();
-  statusField.value = "Scheduled";
-  appointmentType.value = "Consultation";
-  if (urlOrderId) {
-    const selected = ordersCache.find(o => String(o.order_id) === String(urlOrderId));
-    if (selected) customerId.value = selected.customer_id;
-    renderOrderOptions();
-    orderId.value = urlOrderId;
-  } else { customerId.value = ""; renderOrderOptions(); orderId.value = ""; }
-}
+    e.preventDefault();
 
-customerId?.addEventListener("change", renderOrderOptions);
-searchBtn?.addEventListener("click", loadAppointments);
-resetBtn?.addEventListener("click", () => { if (searchInput) searchInput.value = ""; if (statusFilter) statusFilter.value = ""; loadAppointments(); });
-cancelEditBtn?.addEventListener("click", clearForm);
+    const payload = {
+      customer_id:
+        Number(customerSelect.value),
 
-(async function initAppointmentsPage() {
-  try { await loadCustomers(); await loadOrders(); clearForm(); await loadAppointments(); }
-  catch (err) { orderSummary.innerHTML = `<div class="text-danger">${escapeHtml(err.message)}</div>`; }
+      order_id:
+        orderSelect.value
+          ? Number(orderSelect.value)
+          : null,
+
+      appointment_type:
+        appointmentTypeInput.value,
+
+      appointment_date:
+        appointmentDateInput.value,
+
+      appointment_time:
+        appointmentTimeInput.value ||
+        null,
+
+      status:
+        statusInput.value,
+
+      notes:
+        notesInput.value.trim() ||
+        null,
+    };
+
+    const id =
+      appointmentIdInput.value;
+
+    const method =
+      id ? "PUT" : "POST";
+
+    const url = id
+      ? `${ENDPOINT}/${id}`
+      : ENDPOINT;
+
+    try {
+      await fetchJson(url, {
+        method,
+
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+
+        body: JSON.stringify(
+          payload
+        ),
+      });
+
+      clearForm();
+
+      await loadAppointments();
+
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+);
+
+searchBtn.addEventListener(
+  "click",
+  loadAppointments
+);
+
+resetBtn.addEventListener(
+  "click",
+  () => {
+
+    searchInput.value = "";
+
+    statusFilter.value = "";
+
+    loadAppointments();
+  }
+);
+
+cancelEditBtn.addEventListener(
+  "click",
+  clearForm
+);
+
+(async function init() {
+
+  try {
+
+    document.getElementById(
+      "apiUrlText"
+    ).textContent =
+      "/api/appointments";
+
+    await Promise.all([
+      loadCustomers(),
+      loadOrders()
+    ]);
+
+    clearForm();
+
+    await loadAppointments();
+
+  } catch (err) {
+    alert(err.message);
+  }
 })();
