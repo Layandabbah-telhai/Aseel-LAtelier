@@ -72,19 +72,21 @@ function escapeHtml(value) {
 }
 
 function toggleSourceDetails() {
+  if (!sourceDetailsWrap) return;
 
-  if (sourceType.value === "other") {
+  if (sourceType?.value === "other") {
     sourceDetailsWrap.style.display = "";
   } else {
     sourceDetailsWrap.style.display = "none";
-    sourceDetails.value = "";
+
+    if (sourceDetails) {
+      sourceDetails.value = "";
+    }
   }
 }
 
 function sourceLabel(value) {
-
   switch (value) {
-
     case "friend":
       return "Friend";
 
@@ -103,9 +105,7 @@ function sourceLabel(value) {
 }
 
 async function loadCustomers(search = "") {
-
   try {
-
     let url = ENDPOINT;
 
     if (search) {
@@ -134,7 +134,7 @@ async function loadCustomers(search = "") {
 
     tbody.innerHTML = `
       <tr>
-        <td colspan="7"
+        <td colspan="8"
             class="text-danger text-center">
 
           ${escapeHtml(err.message)}
@@ -153,7 +153,6 @@ async function loadCustomers(search = "") {
 function renderCustomers(rows) {
 
   if (customersCount) {
-
     customersCount.textContent =
       `${rows.length} customer${rows.length === 1 ? "" : "s"}`;
   }
@@ -162,7 +161,7 @@ function renderCustomers(rows) {
 
     tbody.innerHTML = `
       <tr>
-        <td colspan="7"
+        <td colspan="8"
             class="text-center text-muted">
 
           No customers found
@@ -200,33 +199,57 @@ function renderCustomers(rows) {
       </td>
 
       <td>
-        ${escapeHtml(sourceLabel(c.source_type))}
+        ${escapeHtml(
+    c.birth_date
+      ? String(c.birth_date).slice(0, 10)
+      : "-"
+  )}
       </td>
 
       <td>
+        ${escapeHtml(sourceLabel(c.source_type))}
 
-        <button
-          class="btn btn-sm btn-outline-primary"
-          onclick="editCustomer(${Number(c.customer_id)})"
-        >
-          Edit
-        </button>
-
-        <button
-          class="btn btn-sm btn-outline-danger"
-          onclick="deleteCustomer(${Number(c.customer_id)})"
-        >
-          Delete
-        </button>
-
-        <a
-          class="btn btn-sm btn-outline-secondary"
-          href="./orders.html?customer_id=${encodeURIComponent(c.customer_id)}"
-        >
-          Orders
-        </a>
-
+        ${c.source_details
+      ? `
+              <div class="small text-muted">
+                ${escapeHtml(c.source_details)}
+              </div>
+            `
+      : ""
+    }
       </td>
+
+<td class="d-flex gap-2 flex-wrap">
+
+  <a
+    class="btn btn-sm btn-outline-secondary"
+    href="./customer-profile.html?id=${encodeURIComponent(c.customer_id)}"
+  >
+    Profile
+  </a>
+
+  <button
+    class="btn btn-sm btn-outline-secondary"
+    onclick="editCustomer(${Number(c.customer_id)})"
+  >
+    Edit
+  </button>
+
+  <button
+    class="btn btn-sm btn-outline-danger"
+    onclick="deleteCustomer(${Number(c.customer_id)})"
+  >
+    Delete
+  </button>
+
+  <a
+    class="btn btn-sm btn-outline-secondary"
+    href="./orders.html?customer_id=${encodeURIComponent(c.customer_id)}"
+  >
+    Orders
+  </a>
+
+</td>
 
     </tr>
 
@@ -236,108 +259,108 @@ function renderCustomers(rows) {
 window.editCustomer =
   async function (id) {
 
-  try {
+    try {
 
-    const res =
-      await fetch(`${ENDPOINT}/${id}`);
+      const res =
+        await fetch(`${ENDPOINT}/${id}`);
 
-    const customer =
-      await res.json().catch(() => null);
+      const customer =
+        await res.json().catch(() => null);
 
-    if (!res.ok) {
+      if (!res.ok) {
 
-      throw new Error(
-        customer?.message ||
+        throw new Error(
+          customer?.message ||
+          "Failed to load customer"
+        );
+      }
+
+      idField.value =
+        customer.customer_id || "";
+
+      firstName.value =
+        customer.first_name || "";
+
+      lastName.value =
+        customer.last_name || "";
+
+      city.value =
+        customer.city || "";
+
+      phone.value =
+        customer.phone || "";
+
+      email.value =
+        customer.email || "";
+
+      birthDate.value =
+        customer.birth_date
+          ? String(customer.birth_date).slice(0, 10)
+          : "";
+
+      sourceType.value =
+        customer.source_type || "";
+
+      sourceDetails.value =
+        customer.source_details || "";
+
+      toggleSourceDetails();
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+
+    } catch (err) {
+
+      alert(
+        err.message ||
         "Failed to load customer"
       );
     }
-
-    idField.value =
-      customer.customer_id || "";
-
-    firstName.value =
-      customer.first_name || "";
-
-    lastName.value =
-      customer.last_name || "";
-
-    city.value =
-      customer.city || "";
-
-    phone.value =
-      customer.phone || "";
-
-    email.value =
-      customer.email || "";
-
-    birthDate.value =
-      customer.birth_date
-        ? String(customer.birth_date).slice(0, 10)
-        : "";
-
-    sourceType.value =
-      customer.source_type || "";
-
-    sourceDetails.value =
-      customer.source_details || "";
-
-    toggleSourceDetails();
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth"
-    });
-
-  } catch (err) {
-
-    alert(
-      err.message ||
-      "Failed to load customer"
-    );
-  }
-};
+  };
 
 window.deleteCustomer =
   async function (id) {
 
-  if (
-    !confirm(
-      "Delete this customer?"
-    )
-  ) {
-    return;
-  }
+    if (
+      !confirm(
+        "Delete this customer?"
+      )
+    ) {
+      return;
+    }
 
-  try {
+    try {
 
-    const res =
-      await fetch(`${ENDPOINT}/${id}`, {
-        method: "DELETE",
-      });
+      const res =
+        await fetch(`${ENDPOINT}/${id}`, {
+          method: "DELETE",
+        });
 
-    const payload =
-      await res.json().catch(() => null);
+      const payload =
+        await res.json().catch(() => null);
 
-    if (!res.ok) {
+      if (!res.ok) {
 
-      throw new Error(
-        payload?.message ||
+        throw new Error(
+          payload?.message ||
+          "Failed to delete customer"
+        );
+      }
+
+      loadCustomers(
+        searchInput.value.trim()
+      );
+
+    } catch (err) {
+
+      alert(
+        err.message ||
         "Failed to delete customer"
       );
     }
-
-    loadCustomers(
-      searchInput.value.trim()
-    );
-
-  } catch (err) {
-
-    alert(
-      err.message ||
-      "Failed to delete customer"
-    );
-  }
-};
+  };
 
 form?.addEventListener(
   "submit",
@@ -428,8 +451,10 @@ function clearForm() {
 
   form.reset();
 
-  sourceDetailsWrap.style.display =
-    "none";
+  if (sourceDetailsWrap) {
+    sourceDetailsWrap.style.display =
+      "none";
+  }
 }
 
 searchBtn?.addEventListener(

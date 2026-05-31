@@ -433,7 +433,241 @@ app.get("/api/customer-dashboard/:customerId", async (req, res) => {
     });
   }
 });
+// ---------------- ADMIN CUSTOMER FULL PROFILE ----------------
+app.get("/api/admin/customer-profile/:customerId", async (req, res) => {
+  try {
+    const customerId = Number(req.params.customerId);
 
+    if (!Number.isFinite(customerId)) {
+      return res.status(400).json({
+        message: "Invalid customer id",
+      });
+    }
+
+    const [[customer]] = await dbPool.query(
+      `
+      SELECT
+        customer_id,
+        first_name,
+        last_name,
+        city,
+        phone,
+        email,
+        birth_date,
+        source_type,
+        source_details
+      FROM customers
+      WHERE customer_id = ?
+      `,
+      [customerId]
+    );
+
+    if (!customer) {
+      return res.status(404).json({
+        message: "Customer not found",
+      });
+    }
+
+    const [orders] = await dbPool.query(
+      `
+      SELECT
+        o.order_id,
+        o.customer_id,
+        o.dress_id,
+        o.order_type,
+        o.occasion_type,
+        o.order_date,
+        o.return_date,
+        o.total_price,
+        o.status,
+
+        d.dress_name,
+        d.size,
+        d.color,
+        d.image_url,
+
+        COALESCE(SUM(p.amount), 0) AS paid_amount
+      FROM orders o
+
+      LEFT JOIN dresses d
+        ON d.dress_id = o.dress_id
+
+      LEFT JOIN payments p
+        ON p.order_id = o.order_id
+
+      WHERE o.customer_id = ?
+
+      GROUP BY
+        o.order_id,
+        o.customer_id,
+        o.dress_id,
+        o.order_type,
+        o.occasion_type,
+        o.order_date,
+        o.return_date,
+        o.total_price,
+        o.status,
+        d.dress_name,
+        d.size,
+        d.color,
+        d.image_url
+
+      ORDER BY o.order_id DESC
+      `,
+      [customerId]
+    );
+
+    const orderIds = orders.map((o) => o.order_id);
+
+    let appointments = [];
+    let measurements = [];
+    let payments = [];
+    let seamstresses = [];
+
+    if (orderIds.length) {
+      const placeholders = orderIds.map(() => "?").join(",");
+
+      const [appointmentRows] = await dbPool.query(
+        `
+        SELECT
+          appointment_id,
+          customer_id,
+          order_id,
+          appointment_type,
+          appointment_date,
+          appointment_time,
+          status,
+          notes
+        FROM appointments
+        WHERE order_id IN (${placeholders})
+        ORDER BY appointment_date DESC, appointment_time DESC
+        `,
+        orderIds
+      );
+
+      appointments = appointmentRows;
+
+      const [measurementRows] = await dbPool.query(
+        `
+        SELECT
+          measurement_id,
+          customer_id,
+          order_id,
+          tailoring_type,
+          bust,
+          waist,
+          hips,
+          shoulder,
+          sleeve_length,
+          dress_length,
+          notes
+        FROM measurements
+        WHERE order_id IN (${placeholders})
+        ORDER BY measurement_id DESC
+        `,
+        orderIds
+      );
+
+      measurements = measurementRows;
+
+      const [paymentRows] = await dbPool.query(
+        `
+        SELECT
+          payment_id,
+          order_id,
+          payment_date,
+          amount,
+          payment_method,
+          notes,
+          due_date,
+          reference_number,
+          payment_status
+        FROM payments
+        WHERE order_id IN (${placeholders})
+        ORDER BY payment_date DESC, payment_id DESC
+        `,
+        orderIds
+      );
+
+      payments = paymentRows;
+
+      try {
+        const [seamstressRows] = await dbPool.query(
+          `
+          SELECT
+            os.order_id,
+            os.seamstress_id,
+            s.name AS seamstress_name,
+            s.phone AS seamstress_phone
+          FROM order_seamstresses os
+          JOIN seamstresses s
+            ON s.seamstress_id = os.seamstress_id
+          WHERE os.order_id IN (${placeholders})
+          ORDER BY os.order_id DESC
+          `,
+          orderIds
+        );
+
+        seamstresses = seamstressRows;
+      } catch (err) {
+        if (!["ER_NO_SUCH_TABLE", "ER_BAD_FIELD_ERROR"].includes(err.code)) {
+          throw err;
+        }
+
+        seamstresses = [];
+      }
+    }
+
+    const fullOrders = orders.map((order) => {
+      const totalPrice = Number(order.total_price || 0);
+      const paidAmount = Number(order.paid_amount || 0);
+
+      return {
+        ...order,
+        total_price: totalPrice,
+        paid_amount: paidAmount,
+        remaining_amount: Math.max(totalPrice - paidAmount, 0),
+        payment_status:
+          paidAmount <= 0
+            ? "unpaid"
+            : paidAmount < totalPrice
+            ? "partial"
+            : "paid",
+
+        appointments: appointments.filter(
+          (a) => Number(a.order_id) === Number(order.order_id)
+        ),
+
+        measurements: measurements.filter(
+          (m) => Number(m.order_id) === Number(order.order_id)
+        ),
+
+        payments: payments
+          .filter((p) => Number(p.order_id) === Number(order.order_id))
+          .map((p) => ({
+            ...p,
+            amount: Number(p.amount || 0),
+          })),
+
+        seamstresses: seamstresses.filter(
+          (s) => Number(s.order_id) === Number(order.order_id)
+        ),
+      };
+    });
+
+    res.json({
+      customer,
+      orders: fullOrders,
+    });
+  } catch (err) {
+    console.error("ADMIN CUSTOMER PROFILE ERROR:", err);
+
+    res.status(500).json({
+      message: "Server error",
+      error: String(err),
+    });
+  }
+});
 // ---------------- CUSTOMER FEEDBACK ----------------
 app.post("/api/customer-feedback", async (req, res) => {
   try {

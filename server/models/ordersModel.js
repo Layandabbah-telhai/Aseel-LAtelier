@@ -91,21 +91,26 @@ class OrdersModel {
       params
     );
 
-    return rows.map((row) => ({
-      ...row,
+    return rows.map((row) => {
+      const paidAmount = Number(row.paid_amount || 0);
+      const totalPrice = Number(row.total_price || 0);
 
-      dress_name: row.dress_name || "Not assigned yet",
+      return {
+        ...row,
 
-      paid_amount: Number(row.paid_amount || 0),
-      total_price: Number(row.total_price || 0),
+        dress_name: row.dress_name || "Not assigned yet",
 
-      payment_status:
-        Number(row.paid_amount || 0) <= 0
-          ? "unpaid"
-          : Number(row.paid_amount || 0) < Number(row.total_price || 0)
+        paid_amount: paidAmount,
+        total_price: totalPrice,
+
+        payment_status:
+          paidAmount <= 0
+            ? "unpaid"
+            : paidAmount < totalPrice
             ? "partial"
             : "paid",
-    }));
+      };
+    });
   }
 
   async getById(order_id) {
@@ -149,17 +154,21 @@ class OrdersModel {
 
     if (!row) return null;
 
+    const paidAmount = Number(row.paid_amount || 0);
+    const totalPrice = Number(row.total_price || 0);
+
     return {
       ...row,
-      paid_amount: Number(row.paid_amount || 0),
-      total_price: Number(row.total_price || 0),
+
+      paid_amount: paidAmount,
+      total_price: totalPrice,
 
       payment_status:
-        Number(row.paid_amount || 0) <= 0
+        paidAmount <= 0
           ? "unpaid"
-          : Number(row.paid_amount || 0) < Number(row.total_price || 0)
-            ? "partial"
-            : "paid",
+          : paidAmount < totalPrice
+          ? "partial"
+          : "paid",
     };
   }
 
@@ -226,17 +235,69 @@ class OrdersModel {
   }
 
   async remove(order_id) {
-    await this.db.query(
-      `DELETE FROM \`${this.paymentsTable}\` WHERE order_id = ?`,
-      [order_id]
-    );
+    const connection = await this.db.getConnection();
 
-    const [result] = await this.db.query(
-      `DELETE FROM \`${this.ordersTable}\` WHERE order_id = ?`,
-      [order_id]
-    );
+    try {
+      await connection.beginTransaction();
 
-    return result.affectedRows > 0;
+      await connection
+        .query(
+          `DELETE FROM \`${this.paymentsTable}\` WHERE order_id = ?`,
+          [order_id]
+        )
+        .catch((err) => {
+          if (!["ER_NO_SUCH_TABLE", "ER_BAD_FIELD_ERROR", "ER_BAD_TABLE_ERROR"].includes(err.code)) {
+            throw err;
+          }
+        });
+
+      await connection
+        .query(
+          `DELETE FROM \`measurements\` WHERE order_id = ?`,
+          [order_id]
+        )
+        .catch((err) => {
+          if (!["ER_NO_SUCH_TABLE", "ER_BAD_FIELD_ERROR", "ER_BAD_TABLE_ERROR"].includes(err.code)) {
+            throw err;
+          }
+        });
+
+      await connection
+        .query(
+          `DELETE FROM \`appointments\` WHERE order_id = ?`,
+          [order_id]
+        )
+        .catch((err) => {
+          if (!["ER_NO_SUCH_TABLE", "ER_BAD_FIELD_ERROR", "ER_BAD_TABLE_ERROR"].includes(err.code)) {
+            throw err;
+          }
+        });
+
+      await connection
+        .query(
+          `DELETE FROM \`order_seamstresses\` WHERE order_id = ?`,
+          [order_id]
+        )
+        .catch((err) => {
+          if (!["ER_NO_SUCH_TABLE", "ER_BAD_FIELD_ERROR", "ER_BAD_TABLE_ERROR"].includes(err.code)) {
+            throw err;
+          }
+        });
+
+      const [result] = await connection.query(
+        `DELETE FROM \`${this.ordersTable}\` WHERE order_id = ?`,
+        [order_id]
+      );
+
+      await connection.commit();
+
+      return result.affectedRows > 0;
+    } catch (err) {
+      await connection.rollback();
+      throw err;
+    } finally {
+      connection.release();
+    }
   }
 
   async listPayments(order_id) {
