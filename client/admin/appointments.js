@@ -552,6 +552,18 @@ orderSelect.addEventListener(
 
     await loadAppointments();
 
+    const params =
+      new URLSearchParams(window.location.search);
+
+    const orderId =
+      params.get("order_id");
+
+    if (orderId && orderSelect) {
+
+      orderSelect.value =
+        orderId;
+    }
+
   } catch (err) {
 
     alert(err.message);

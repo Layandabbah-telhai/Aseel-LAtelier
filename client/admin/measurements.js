@@ -365,14 +365,35 @@ cancelEditBtn?.addEventListener("click", clearForm);
 
 (async function initMeasurementsPage() {
   try {
+
     await loadCustomers();
+
     await loadOrders();
+
     clearForm();
+
     await loadMeasurements();
+
+    const params =
+      new URLSearchParams(window.location.search);
+
+    const orderId =
+      params.get("order_id");
+
+    if (orderId && orderSelect) {
+
+      orderSelect.value =
+        orderId;
+    }
+
   } catch (err) {
+
     if (orderSummary) {
+
       orderSummary.innerHTML = `
-        <div class="text-danger">${escapeHtml(err.message)}</div>
+        <div class="text-danger">
+          ${escapeHtml(err.message)}
+        </div>
       `;
     }
   }

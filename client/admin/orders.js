@@ -254,6 +254,13 @@ function renderOrders() {
         <td class="d-flex gap-2 flex-wrap">
 
           <button
+            class="btn btn-sm btn-outline-primary"
+            onclick="openOrderDetails(${o.order_id})"
+          >
+            Details
+          </button>
+
+          <button
             class="btn btn-sm btn-outline-secondary"
             onclick="editOrder(${o.order_id})"
           >
@@ -486,7 +493,12 @@ window.deleteOrder =
       alert(err.message);
     }
   };
+window.openOrderDetails =
+  function (id) {
 
+    window.location.href =
+      `order-details.html?order_id=${id}`;
+  };
 orderForm?.addEventListener(
   "submit",
   async (e) => {
@@ -648,7 +660,6 @@ totalPriceInput?.addEventListener(
     priceWasAutoFilled = false;
   }
 );
-
 (async function init() {
 
   try {
@@ -661,6 +672,13 @@ totalPriceInput?.addEventListener(
     clearOrderForm();
 
     await loadOrders();
+
+    const params = new URLSearchParams(window.location.search);
+    const editOrderId = params.get("edit_order_id");
+
+    if (editOrderId) {
+      window.editOrder(Number(editOrderId));
+    }
 
   } catch (err) {
 

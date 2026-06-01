@@ -487,4 +487,21 @@ sourceType?.addEventListener(
   toggleSourceDetails
 );
 
-loadCustomers();
+(async function () {
+
+  await loadCustomers();
+
+  const params =
+    new URLSearchParams(window.location.search);
+
+  const editCustomerId =
+    params.get("edit_customer_id");
+
+  if (editCustomerId) {
+
+    window.editCustomer(
+      Number(editCustomerId)
+    );
+  }
+
+})();

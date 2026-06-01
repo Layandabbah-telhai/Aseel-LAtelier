@@ -383,4 +383,21 @@ resetBtn?.addEventListener("click", () => {
 cancelEditBtn?.addEventListener("click", clearForm);
 
 renderPreviewGallery([]);
-loadDresses();
+(async function () {
+
+  await loadDresses();
+
+  const params =
+    new URLSearchParams(window.location.search);
+
+  const editDressId =
+    params.get("edit_dress_id");
+
+  if (editDressId) {
+
+    window.editDress(
+      Number(editDressId)
+    );
+  }
+
+})();

@@ -6,6 +6,13 @@ const ALLOWED_TASK_TYPES = [
   "Final Adjustment",
 ];
 
+const ALLOWED_ASSIGNMENT_STATUS = [
+  "Pending",
+  "In Progress",
+  "Ready For Fitting",
+  "Completed",
+];
+
 function normalizeSeamstressInput(body) {
   return {
     name: String(body?.name || "").trim(),
@@ -19,16 +26,24 @@ function normalizeAssignmentInput(body) {
     seamstress_id: Number(body?.seamstress_id),
     task_type: String(body?.task_type || "").trim(),
     notes: String(body?.notes || "").trim(),
+    assignment_status: String(body?.assignment_status || "Pending").trim(),
+    due_date: body?.due_date ? String(body.due_date).trim() : null,
   };
 }
 
 function validateTaskType(taskType) {
-  if (!taskType) {
-    return "task_type is required";
-  }
+  if (!taskType) return "task_type is required";
 
   if (!ALLOWED_TASK_TYPES.includes(taskType)) {
     return `task_type must be one of: ${ALLOWED_TASK_TYPES.join(", ")}`;
+  }
+
+  return null;
+}
+
+function validateAssignmentStatus(status) {
+  if (!ALLOWED_ASSIGNMENT_STATUS.includes(status)) {
+    return `assignment_status must be one of: ${ALLOWED_ASSIGNMENT_STATUS.join(", ")}`;
   }
 
   return null;
@@ -63,12 +78,16 @@ class SeamstressesController {
   async getSeamstress(req, res) {
     try {
       const id = Number(req.params.id);
+
       if (!Number.isFinite(id)) {
         return res.status(400).json({ message: "Invalid id" });
       }
 
       const row = await this.model.getSeamstressById(id);
-      if (!row) return res.status(404).json({ message: "Not found" });
+
+      if (!row) {
+        return res.status(404).json({ message: "Not found" });
+      }
 
       res.json(row);
     } catch (err) {
@@ -86,6 +105,7 @@ class SeamstressesController {
       }
 
       const created = await this.model.createSeamstress(data);
+
       res.status(201).json(created);
     } catch (err) {
       console.error("SEAMSTRESSES CREATE ERROR:", err);
@@ -96,6 +116,7 @@ class SeamstressesController {
   async updateSeamstress(req, res) {
     try {
       const id = Number(req.params.id);
+
       if (!Number.isFinite(id)) {
         return res.status(400).json({ message: "Invalid id" });
       }
@@ -107,7 +128,10 @@ class SeamstressesController {
       }
 
       const updated = await this.model.updateSeamstress(id, data);
-      if (!updated) return res.status(404).json({ message: "Not found" });
+
+      if (!updated) {
+        return res.status(404).json({ message: "Not found" });
+      }
 
       res.json(updated);
     } catch (err) {
@@ -119,12 +143,16 @@ class SeamstressesController {
   async deleteSeamstress(req, res) {
     try {
       const id = Number(req.params.id);
+
       if (!Number.isFinite(id)) {
         return res.status(400).json({ message: "Invalid id" });
       }
 
       const ok = await this.model.deleteSeamstress(id);
-      if (!ok) return res.status(404).json({ message: "Not found" });
+
+      if (!ok) {
+        return res.status(404).json({ message: "Not found" });
+      }
 
       res.json({ message: "Deleted" });
     } catch (err) {
@@ -146,6 +174,7 @@ class SeamstressesController {
       const rows = await this.model.listAssignments({
         order_id: req.query.order_id || null,
       });
+
       res.json(rows);
     } catch (err) {
       console.error("SEAMSTRESS ASSIGNMENTS LIST ERROR:", err);
@@ -170,7 +199,13 @@ class SeamstressesController {
         return res.status(400).json({ message: taskTypeError });
       }
 
+      const statusError = validateAssignmentStatus(data.assignment_status);
+      if (statusError) {
+        return res.status(400).json({ message: statusError });
+      }
+
       const created = await this.model.createAssignment(data);
+
       res.status(201).json(created);
     } catch (err) {
       console.error("SEAMSTRESS ASSIGNMENT CREATE ERROR:", err);
@@ -181,6 +216,7 @@ class SeamstressesController {
   async updateAssignment(req, res) {
     try {
       const id = Number(req.params.id);
+
       if (!Number.isFinite(id)) {
         return res.status(400).json({ message: "Invalid id" });
       }
@@ -200,8 +236,16 @@ class SeamstressesController {
         return res.status(400).json({ message: taskTypeError });
       }
 
+      const statusError = validateAssignmentStatus(data.assignment_status);
+      if (statusError) {
+        return res.status(400).json({ message: statusError });
+      }
+
       const updated = await this.model.updateAssignment(id, data);
-      if (!updated) return res.status(404).json({ message: "Not found" });
+
+      if (!updated) {
+        return res.status(404).json({ message: "Not found" });
+      }
 
       res.json(updated);
     } catch (err) {
@@ -213,12 +257,16 @@ class SeamstressesController {
   async deleteAssignment(req, res) {
     try {
       const id = Number(req.params.id);
+
       if (!Number.isFinite(id)) {
         return res.status(400).json({ message: "Invalid id" });
       }
 
       const ok = await this.model.deleteAssignment(id);
-      if (!ok) return res.status(404).json({ message: "Not found" });
+
+      if (!ok) {
+        return res.status(404).json({ message: "Not found" });
+      }
 
       res.json({ message: "Deleted" });
     } catch (err) {
