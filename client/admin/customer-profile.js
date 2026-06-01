@@ -1,98 +1,122 @@
 const API_BASE =
-    window.CONFIG?.API_BASE ||
-    "http://localhost:4000/api";
+  window.CONFIG?.API_BASE ||
+  "http://localhost:4000/api";
 
 const customerInfo =
-    document.getElementById("customerInfo");
+  document.getElementById("customerInfo");
 
 const ordersContainer =
-    document.getElementById("ordersContainer");
+  document.getElementById("ordersContainer");
 
 const params =
-    new URLSearchParams(window.location.search);
+  new URLSearchParams(window.location.search);
 
 const customerId =
-    params.get("id");
+  params.get("id");
 
 function escapeHtml(value) {
-    return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 function dateOnly(value) {
-    if (!value) return "-";
-    return String(value).slice(0, 10);
+  if (!value) return "-";
+  return String(value).slice(0, 10);
 }
 
 function money(value) {
-    return Number(value || 0).toFixed(2);
+  return Number(value || 0).toFixed(2);
 }
 
 function text(value) {
-    return value === null ||
-        value === undefined ||
-        value === ""
-        ? "-"
-        : String(value);
+  return value === null ||
+    value === undefined ||
+    value === ""
+    ? "-"
+    : String(value);
 }
 
 function sourceLabel(value) {
-    switch (value) {
-        case "friend":
-            return "Friend";
+  switch (value) {
+    case "friend":
+      return "Friend";
 
-        case "instagram":
-            return "Instagram";
+    case "instagram":
+      return "Instagram";
 
-        case "previous_experience":
-            return "Previous Experience";
+    case "previous_experience":
+      return "Previous Experience";
 
-        case "other":
-            return "Other";
+    case "other":
+      return "Other";
 
-        default:
-            return "-";
-    }
+    default:
+      return "-";
+  }
+}
+
+function experienceLabel(value) {
+  switch (String(value || "")) {
+    case "1":
+      return "1 - Bad";
+
+    case "2":
+      return "2 - Fair";
+
+    case "3":
+      return "3 - Good";
+
+    case "4":
+      return "4 - Very Good";
+
+    case "5":
+      return "5 - Excellent";
+
+    default:
+      return "-";
+  }
 }
 
 function paymentStatusBadge(status) {
-    const s = String(status || "").toLowerCase();
+  const s = String(status || "").toLowerCase();
 
-    if (s === "paid") {
-        return `<span class="badge bg-success">Paid</span>`;
-    }
+  if (s === "paid") {
+    return `<span class="badge bg-success">Paid</span>`;
+  }
 
-    if (s === "partial") {
-        return `<span class="badge bg-warning text-dark">Partial</span>`;
-    }
+  if (s === "partial") {
+    return `<span class="badge bg-warning text-dark">Partial</span>`;
+  }
 
-    return `<span class="badge bg-secondary">Unpaid</span>`;
+  return `<span class="badge bg-secondary">Unpaid</span>`;
 }
 
 async function fetchJson(url) {
-    const res = await fetch(url);
-    const data = await res.json().catch(() => null);
+  const res = await fetch(url);
 
-    if (!res.ok) {
-        throw new Error(
-            data?.message ||
-            data?.error ||
-            "Request failed"
-        );
-    }
+  const data =
+    await res.json().catch(() => null);
 
-    return data;
+  if (!res.ok) {
+    throw new Error(
+      data?.message ||
+      data?.error ||
+      "Request failed"
+    );
+  }
+
+  return data;
 }
 
 function renderCustomer(customer) {
-    const fullName =
-        `${customer.first_name || ""} ${customer.last_name || ""}`.trim();
+  const fullName =
+    `${customer.first_name || ""} ${customer.last_name || ""}`.trim();
 
-    customerInfo.innerHTML = `
+  customerInfo.innerHTML = `
     <div class="row g-3">
 
       <div class="col-md-4">
@@ -135,7 +159,9 @@ function renderCustomer(customer) {
         <div>
           ${escapeHtml(sourceLabel(customer.source_type))}
         </div>
-        ${customer.source_details
+
+        ${
+          customer.source_details
             ? `
               <div class="small text-muted">
                 ${escapeHtml(customer.source_details)}
@@ -150,15 +176,15 @@ function renderCustomer(customer) {
 }
 
 function renderPayments(payments) {
-    if (!payments || !payments.length) {
-        return `
+  if (!payments || !payments.length) {
+    return `
       <div class="small text-muted">
         No payments.
       </div>
     `;
-    }
+  }
 
-    return `
+  return `
     <div class="table-responsive">
       <table class="table table-sm align-middle">
         <thead>
@@ -190,15 +216,15 @@ function renderPayments(payments) {
 }
 
 function renderAppointments(appointments) {
-    if (!appointments || !appointments.length) {
-        return `
+  if (!appointments || !appointments.length) {
+    return `
       <div class="small text-muted">
         No appointments.
       </div>
     `;
-    }
+  }
 
-    return `
+  return `
     <div class="table-responsive">
       <table class="table table-sm align-middle">
         <thead>
@@ -230,15 +256,15 @@ function renderAppointments(appointments) {
 }
 
 function renderMeasurements(measurements) {
-    if (!measurements || !measurements.length) {
-        return `
+  if (!measurements || !measurements.length) {
+    return `
       <div class="small text-muted">
         No measurements.
       </div>
     `;
-    }
+  }
 
-    return `
+  return `
     <div class="table-responsive">
       <table class="table table-sm align-middle">
         <thead>
@@ -276,38 +302,59 @@ function renderMeasurements(measurements) {
 }
 
 function renderSeamstresses(seamstresses) {
-    if (!seamstresses || !seamstresses.length) {
-        return `
+  if (!seamstresses || !seamstresses.length) {
+    return `
       <div class="small text-muted">
         No seamstress assigned.
       </div>
     `;
-    }
+  }
 
-    return seamstresses.map(s => `
+  return seamstresses.map(s => `
     <div>
       ${escapeHtml(s.seamstress_name || "-")}
-      ${s.seamstress_phone
-            ? `<span class="small text-muted">(${escapeHtml(s.seamstress_phone)})</span>`
-            : ""
-        }
+      ${
+        s.seamstress_phone
+          ? `<span class="small text-muted">(${escapeHtml(s.seamstress_phone)})</span>`
+          : ""
+      }
     </div>
   `).join("");
 }
 
+function renderPreviousExperience(order) {
+  if (!order.has_previous_experience) {
+    return "No";
+  }
+
+  return `
+    Yes
+    ${
+      order.previous_experience_type
+        ? `<div class="small text-muted">Type: ${escapeHtml(order.previous_experience_type)}</div>`
+        : ""
+    }
+    ${
+      order.experience_rating
+        ? `<div class="small text-muted">Rating: ${escapeHtml(experienceLabel(order.experience_rating))}</div>`
+        : ""
+    }
+  `;
+}
+
 function renderOrders(orders) {
-    if (!orders || !orders.length) {
-        ordersContainer.innerHTML = `
+  if (!orders || !orders.length) {
+    ordersContainer.innerHTML = `
       <div class="card card-luxe">
         <div class="card-body text-muted">
           This customer does not have any orders yet.
         </div>
       </div>
     `;
-        return;
-    }
+    return;
+  }
 
-    ordersContainer.innerHTML = orders.map((o, index) => `
+  ordersContainer.innerHTML = orders.map((o) => `
     <div class="card card-luxe mb-4">
 
       <div class="card-header d-flex flex-column flex-md-row justify-content-between gap-2">
@@ -337,6 +384,11 @@ function renderOrders(orders) {
         <div class="row g-3 mb-4">
 
           <div class="col-md-3">
+            <div class="small-muted">Customer Type</div>
+            <div>${escapeHtml(text(o.customer_type))}</div>
+          </div>
+
+          <div class="col-md-3">
             <div class="small-muted">Dress</div>
             <div>${escapeHtml(o.dress_name || "Not assigned yet")}</div>
           </div>
@@ -352,13 +404,33 @@ function renderOrders(orders) {
           </div>
 
           <div class="col-md-3">
+            <div class="small-muted">Paid</div>
+            <div>${escapeHtml(money(o.paid_amount))}</div>
+          </div>
+
+          <div class="col-md-3">
             <div class="small-muted">Remaining</div>
             <div>${escapeHtml(money(o.remaining_amount))}</div>
           </div>
 
           <div class="col-md-3">
+            <div class="small-muted">Venue City</div>
+            <div>${escapeHtml(text(o.venue_city))}</div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="small-muted">Venue Hall</div>
+            <div>${escapeHtml(text(o.venue_hall))}</div>
+          </div>
+
+          <div class="col-md-3">
             <div class="small-muted">Return Date</div>
             <div>${escapeHtml(dateOnly(o.return_date))}</div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="small-muted">Previous Experience</div>
+            <div>${renderPreviousExperience(o)}</div>
           </div>
 
           <div class="col-md-3">
@@ -389,32 +461,32 @@ function renderOrders(orders) {
 }
 
 async function init() {
-    if (!customerId) {
-        customerInfo.innerHTML = `
+  if (!customerId) {
+    customerInfo.innerHTML = `
       <div class="text-danger">
         Missing customer id.
       </div>
     `;
-        return;
-    }
+    return;
+  }
 
-    try {
-        const data =
-            await fetchJson(
-                `${API_BASE}/admin/customer-profile/${encodeURIComponent(customerId)}`
-            );
+  try {
+    const data =
+      await fetchJson(
+        `${API_BASE}/admin/customer-profile/${encodeURIComponent(customerId)}`
+      );
 
-        renderCustomer(data.customer);
-        renderOrders(data.orders);
-    } catch (err) {
-        customerInfo.innerHTML = `
+    renderCustomer(data.customer);
+    renderOrders(data.orders);
+  } catch (err) {
+    customerInfo.innerHTML = `
       <div class="text-danger">
         ${escapeHtml(err.message)}
       </div>
     `;
 
-        ordersContainer.innerHTML = "";
-    }
+    ordersContainer.innerHTML = "";
+  }
 }
 
 init();

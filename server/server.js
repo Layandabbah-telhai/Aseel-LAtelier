@@ -407,8 +407,8 @@ app.get("/api/customer-dashboard/:customerId", async (req, res) => {
           paidAmount <= 0
             ? "unpaid"
             : paidAmount < totalPrice
-            ? "partial"
-            : "paid",
+              ? "partial"
+              : "paid",
 
         measurements: orderMeasurements,
         appointments: orderAppointments,
@@ -433,6 +433,7 @@ app.get("/api/customer-dashboard/:customerId", async (req, res) => {
     });
   }
 });
+
 // ---------------- ADMIN CUSTOMER FULL PROFILE ----------------
 app.get("/api/admin/customer-profile/:customerId", async (req, res) => {
   try {
@@ -481,12 +482,20 @@ app.get("/api/admin/customer-profile/:customerId", async (req, res) => {
         o.total_price,
         o.status,
 
+        o.customer_type,
+        o.venue_city,
+        o.venue_hall,
+        o.has_previous_experience,
+        o.previous_experience_type,
+        o.experience_rating,
+
         d.dress_name,
         d.size,
         d.color,
         d.image_url,
 
         COALESCE(SUM(p.amount), 0) AS paid_amount
+
       FROM orders o
 
       LEFT JOIN dresses d
@@ -507,6 +516,14 @@ app.get("/api/admin/customer-profile/:customerId", async (req, res) => {
         o.return_date,
         o.total_price,
         o.status,
+
+        o.customer_type,
+        o.venue_city,
+        o.venue_hall,
+        o.has_previous_experience,
+        o.previous_experience_type,
+        o.experience_rating,
+
         d.dress_name,
         d.size,
         d.color,
@@ -624,15 +641,19 @@ app.get("/api/admin/customer-profile/:customerId", async (req, res) => {
 
       return {
         ...order,
+
         total_price: totalPrice,
         paid_amount: paidAmount,
         remaining_amount: Math.max(totalPrice - paidAmount, 0),
+
+        has_previous_experience: Boolean(order.has_previous_experience),
+
         payment_status:
           paidAmount <= 0
             ? "unpaid"
             : paidAmount < totalPrice
-            ? "partial"
-            : "paid",
+              ? "partial"
+              : "paid",
 
         appointments: appointments.filter(
           (a) => Number(a.order_id) === Number(order.order_id)
@@ -668,6 +689,7 @@ app.get("/api/admin/customer-profile/:customerId", async (req, res) => {
     });
   }
 });
+
 // ---------------- CUSTOMER FEEDBACK ----------------
 app.post("/api/customer-feedback", async (req, res) => {
   try {

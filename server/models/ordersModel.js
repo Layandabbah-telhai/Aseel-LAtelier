@@ -21,10 +21,13 @@ class OrdersModel {
         c.phone LIKE ? OR
         d.dress_name LIKE ? OR
         o.order_type LIKE ? OR
-        o.occasion_type LIKE ?
+        o.occasion_type LIKE ? OR
+        o.customer_type LIKE ? OR
+        o.venue_city LIKE ? OR
+        o.venue_hall LIKE ?
       )`);
 
-      params.push(like, like, like, like, like, like);
+      params.push(like, like, like, like, like, like, like, like, like);
     }
 
     if (status.trim()) {
@@ -48,6 +51,13 @@ class OrdersModel {
         o.return_date,
         o.total_price,
         o.status,
+
+        o.customer_type,
+        o.venue_city,
+        o.venue_hall,
+        o.has_previous_experience,
+        o.previous_experience_type,
+        o.experience_rating,
 
         c.first_name,
         c.last_name,
@@ -80,6 +90,14 @@ class OrdersModel {
         o.return_date,
         o.total_price,
         o.status,
+
+        o.customer_type,
+        o.venue_city,
+        o.venue_hall,
+        o.has_previous_experience,
+        o.previous_experience_type,
+        o.experience_rating,
+
         c.first_name,
         c.last_name,
         c.phone,
@@ -103,12 +121,14 @@ class OrdersModel {
         paid_amount: paidAmount,
         total_price: totalPrice,
 
+        has_previous_experience: Boolean(row.has_previous_experience),
+
         payment_status:
           paidAmount <= 0
             ? "unpaid"
             : paidAmount < totalPrice
-            ? "partial"
-            : "paid",
+              ? "partial"
+              : "paid",
       };
     });
   }
@@ -126,6 +146,13 @@ class OrdersModel {
         o.return_date,
         o.total_price,
         o.status,
+
+        o.customer_type,
+        o.venue_city,
+        o.venue_hall,
+        o.has_previous_experience,
+        o.previous_experience_type,
+        o.experience_rating,
 
         COALESCE(SUM(p.amount), 0) AS paid_amount
 
@@ -145,7 +172,14 @@ class OrdersModel {
         o.order_date,
         o.return_date,
         o.total_price,
-        o.status
+        o.status,
+
+        o.customer_type,
+        o.venue_city,
+        o.venue_hall,
+        o.has_previous_experience,
+        o.previous_experience_type,
+        o.experience_rating
       `,
       [order_id]
     );
@@ -163,12 +197,14 @@ class OrdersModel {
       paid_amount: paidAmount,
       total_price: totalPrice,
 
+      has_previous_experience: Boolean(row.has_previous_experience),
+
       payment_status:
         paidAmount <= 0
           ? "unpaid"
           : paidAmount < totalPrice
-          ? "partial"
-          : "paid",
+            ? "partial"
+            : "paid",
     };
   }
 
@@ -184,9 +220,16 @@ class OrdersModel {
         order_date,
         return_date,
         total_price,
-        status
+        status,
+
+        customer_type,
+        venue_city,
+        venue_hall,
+        has_previous_experience,
+        previous_experience_type,
+        experience_rating
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         data.customer_id,
@@ -197,6 +240,13 @@ class OrdersModel {
         data.return_date || null,
         data.total_price,
         data.status,
+
+        data.customer_type || null,
+        data.venue_city || null,
+        data.venue_hall || null,
+        data.has_previous_experience ? 1 : 0,
+        data.previous_experience_type || null,
+        data.experience_rating || null,
       ]
     );
 
@@ -215,7 +265,14 @@ class OrdersModel {
         order_date = ?,
         return_date = ?,
         total_price = ?,
-        status = ?
+        status = ?,
+
+        customer_type = ?,
+        venue_city = ?,
+        venue_hall = ?,
+        has_previous_experience = ?,
+        previous_experience_type = ?,
+        experience_rating = ?
       WHERE order_id = ?
       `,
       [
@@ -227,6 +284,14 @@ class OrdersModel {
         data.return_date || null,
         data.total_price,
         data.status,
+
+        data.customer_type || null,
+        data.venue_city || null,
+        data.venue_hall || null,
+        data.has_previous_experience ? 1 : 0,
+        data.previous_experience_type || null,
+        data.experience_rating || null,
+
         order_id,
       ]
     );

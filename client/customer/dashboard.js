@@ -133,11 +133,11 @@ function renderProgressTimeline(status) {
 
       <div class="d-flex flex-wrap gap-2">
         ${steps
-      .map((step, index) => {
-        const done = index <= current;
-        const active = index === current;
+          .map((step, index) => {
+            const done = index <= current;
+            const active = index === current;
 
-        return `
+            return `
               <div
                 class="px-3 py-2 rounded-pill border"
                 style="
@@ -150,8 +150,8 @@ function renderProgressTimeline(status) {
                 ${done ? "✓" : "○"} ${escapeHtml(step)}
               </div>
             `;
-      })
-      .join("")}
+          })
+          .join("")}
       </div>
     </div>
   `;
@@ -216,9 +216,10 @@ function renderDashboard(data, occasionRequests = []) {
 
     ${renderMyOccasionRequests(occasionRequests)}
 
-    ${orders.length
-      ? orders.map(renderOrderCard).join("")
-      : `
+    ${
+      orders.length
+        ? orders.map(renderOrderCard).join("")
+        : `
           <div class="card card-luxe">
             <div class="card-body text-center small-muted">
               You do not have any orders yet.
@@ -312,26 +313,19 @@ function renderMyOccasionRequests(requests) {
 
             <tbody>
               ${requests
-      .map(
-        (r) => `
+                .map(
+                  (r) => `
                 <tr>
                   <td>${escapeHtml(r.request_id)}</td>
-
                   <td>${escapeHtml(r.occasion_type || "-")}</td>
-
                   <td>${escapeHtml(formatDate(r.event_date))}</td>
-
-                  <td>${escapeHtml(
-          prettifyStatus(r.order_type || "-")
-        )}</td>
-
+                  <td>${escapeHtml(prettifyStatus(r.order_type || "-"))}</td>
                   <td>${statusBadge(r.status)}</td>
-
                   <td>${escapeHtml(r.admin_notes || "-")}</td>
                 </tr>
               `
-      )
-      .join("")}
+                )
+                .join("")}
             </tbody>
           </table>
         </div>
@@ -393,13 +387,8 @@ function renderOrderCard(order) {
               <div class="col-md-4">
                 <div class="card border-0 bg-light rounded-4">
                   <div class="card-body">
-                    <div class="small-muted">
-                      Order Date
-                    </div>
-
-                    <strong>
-                      ${formatDate(order.order_date)}
-                    </strong>
+                    <div class="small-muted">Order Date</div>
+                    <strong>${formatDate(order.order_date)}</strong>
                   </div>
                 </div>
               </div>
@@ -407,13 +396,8 @@ function renderOrderCard(order) {
               <div class="col-md-4">
                 <div class="card border-0 bg-light rounded-4">
                   <div class="card-body">
-                    <div class="small-muted">
-                      Return Date
-                    </div>
-
-                    <strong>
-                      ${formatDate(order.return_date)}
-                    </strong>
+                    <div class="small-muted">Return Date</div>
+                    <strong>${formatDate(order.return_date)}</strong>
                   </div>
                 </div>
               </div>
@@ -421,15 +405,8 @@ function renderOrderCard(order) {
               <div class="col-md-4">
                 <div class="card border-0 bg-light rounded-4">
                   <div class="card-body">
-                    <div class="small-muted">
-                      Payment Status
-                    </div>
-
-                    <strong>
-                      ${escapeHtml(
-    prettifyStatus(order.payment_status)
-  )}
-                    </strong>
+                    <div class="small-muted">Payment Status</div>
+                    <strong>${escapeHtml(prettifyStatus(order.payment_status))}</strong>
                   </div>
                 </div>
               </div>
@@ -497,19 +474,20 @@ function renderAppointmentRequest(order) {
 
   if (orderType === "sale") {
     appointmentOptions = [
-      "Consultation",
-      "Measurements",
-      "Design Approval",
+      "First Consultation",
+      "Design Selection",
+      "Fabric Selection",
       "First Fitting",
+      "Second Fitting",
       "Final Fitting",
       "Pickup",
     ];
   } else if (orderType === "rental") {
     appointmentOptions = [
-      "Rental Consultation",
-      "Fitting",
-      "Pickup",
-      "Return",
+      "Rental Fitting",
+      "Final Adjustments",
+      "Dress Pickup",
+      "Dress Return",
     ];
   } else {
     appointmentOptions = ["Consultation", "Fitting"];
@@ -530,14 +508,14 @@ function renderAppointmentRequest(order) {
                 id="request_type_${order.order_id}"
               >
                 ${appointmentOptions
-      .map(
-        (option) => `
+                  .map(
+                    (option) => `
                   <option value="${escapeHtml(option)}">
                     ${escapeHtml(option)}
                   </option>
                 `
-      )
-      .join("")}
+                  )
+                  .join("")}
               </select>
             </div>
 
@@ -609,33 +587,160 @@ function renderAppointments(appointments) {
               <th>Time</th>
               <th>Type</th>
               <th>Status</th>
+              <th>Change</th>
             </tr>
           </thead>
 
           <tbody>
             ${appointments
-      .map(
-        (a) => `
+              .map(
+                (a) => `
               <tr>
                 <td>${formatDate(a.appointment_date)}</td>
 
                 <td>${formatTime(a.appointment_time)}</td>
 
-                <td>${escapeHtml(a.type || "-")}</td>
+                <td>${escapeHtml(a.type || a.appointment_type || "-")}</td>
 
                 <td>
                   ${escapeHtml(prettifyStatus(a.status || "-"))}
                 </td>
+
+                <td>
+                  ${renderChangeRequestButton(a)}
+                </td>
               </tr>
             `
-      )
-      .join("")}
+              )
+              .join("")}
           </tbody>
 
         </table>
       </div>
     </div>
   `;
+}
+
+function renderChangeRequestButton(appointment) {
+  const status = normalizeStatus(appointment.status);
+
+  if (
+    status === "completed" ||
+    status === "cancelled" ||
+    status === "missed"
+  ) {
+    return `
+      <span class="small-muted">
+        Not available
+      </span>
+    `;
+  }
+
+  return `
+    <button
+      class="btn btn-sm btn-outline-secondary"
+      onclick="openChangeRequestForm(${Number(appointment.appointment_id)})"
+    >
+      Request Change
+    </button>
+
+    <div
+      id="change_request_form_${appointment.appointment_id}"
+      class="mt-3"
+      style="display:none;"
+    >
+      <div class="row g-2">
+
+        <div class="col-md-4">
+          <input
+            type="date"
+            class="form-control form-control-sm"
+            id="change_date_${appointment.appointment_id}"
+          >
+        </div>
+
+        <div class="col-md-4">
+          <input
+            type="time"
+            class="form-control form-control-sm"
+            id="change_time_${appointment.appointment_id}"
+          >
+        </div>
+
+        <div class="col-md-4">
+          <button
+            class="btn btn-sm btn-dark w-100"
+            onclick="submitAppointmentChangeRequest(${Number(appointment.appointment_id)}, ${Number(appointment.order_id)})"
+          >
+            Submit
+          </button>
+        </div>
+
+      </div>
+
+      <div class="mt-2">
+        <textarea
+          class="form-control form-control-sm"
+          rows="2"
+          placeholder="Reason / notes..."
+          id="change_reason_${appointment.appointment_id}"
+        ></textarea>
+      </div>
+    </div>
+  `;
+}
+
+function openChangeRequestForm(appointmentId) {
+  const form =
+    document.getElementById(`change_request_form_${appointmentId}`);
+
+  if (!form) return;
+
+  form.style.display =
+    form.style.display === "none"
+      ? ""
+      : "none";
+}
+
+async function submitAppointmentChangeRequest(appointmentId, orderId) {
+  try {
+    const requested_date =
+      document.getElementById(`change_date_${appointmentId}`)?.value;
+
+    const requested_time =
+      document.getElementById(`change_time_${appointmentId}`)?.value;
+
+    const reason =
+      document.getElementById(`change_reason_${appointmentId}`)?.value;
+
+    if (!requested_date || !requested_time) {
+      alert("Please choose requested date and time.");
+      return;
+    }
+
+    await fetchJson(`${API_BASE}/appointments/change-requests`, {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json",
+      },
+
+      body: JSON.stringify({
+        appointment_id: appointmentId,
+        customer_id: user.customer_id,
+        order_id: orderId,
+        requested_date,
+        requested_time,
+        reason,
+      }),
+    });
+
+    alert("Change request submitted successfully!");
+
+    await loadDashboard();
+  } catch (err) {
+    alert(err.message || "Failed to submit change request");
+  }
 }
 
 async function submitAppointmentRequest(orderId) {
@@ -681,7 +786,6 @@ async function submitAppointmentRequest(orderId) {
     alert(err.message || "Failed to submit request");
   }
 }
-
 
 async function submitOccasionRequest() {
   try {
@@ -744,5 +848,7 @@ async function submitOccasionRequest() {
 
 window.submitAppointmentRequest = submitAppointmentRequest;
 window.submitOccasionRequest = submitOccasionRequest;
+window.openChangeRequestForm = openChangeRequestForm;
+window.submitAppointmentChangeRequest = submitAppointmentChangeRequest;
 
 loadDashboard();

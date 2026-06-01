@@ -23,6 +23,28 @@ function normalizeOrderInput(body) {
 
     occasion_type: String(body?.occasion_type || "").trim(),
 
+    customer_type: String(body?.customer_type || "").trim(),
+
+    venue_city: String(body?.venue_city || "").trim(),
+
+    venue_hall: String(body?.venue_hall || "").trim(),
+
+    has_previous_experience:
+      body?.has_previous_experience === true ||
+      body?.has_previous_experience === 1 ||
+      body?.has_previous_experience === "1",
+
+    previous_experience_type: String(
+      body?.previous_experience_type || ""
+    ).trim(),
+
+    experience_rating:
+      body?.experience_rating === "" ||
+        body?.experience_rating === undefined ||
+        body?.experience_rating === null
+        ? null
+        : Number(body.experience_rating),
+
     order_date: String(body?.order_date || "").trim(),
 
     return_date: body?.return_date
