@@ -55,9 +55,6 @@ const orderForm =
 const searchInput =
   document.getElementById("searchInput");
 
-const statusFilter =
-  document.getElementById("statusFilter");
-
 const searchBtn =
   document.getElementById("searchBtn");
 
@@ -174,19 +171,13 @@ async function loadDresses() {
 }
 
 async function loadOrders() {
+
   const params = new URLSearchParams();
 
   if (searchInput?.value.trim()) {
     params.set(
       "search",
       searchInput.value.trim()
-    );
-  }
-
-  if (statusFilter?.value) {
-    params.set(
-      "status",
-      statusFilter.value
     );
   }
 
@@ -229,9 +220,9 @@ function renderOrders() {
 
         <td>
           ${text(
-      o.customer_name ||
-      `${o.first_name || ""} ${o.last_name || ""}`.trim()
-    )}
+            o.customer_name ||
+            `${o.first_name || ""} ${o.last_name || ""}`.trim()
+          )}
         </td>
 
         <td>
@@ -255,7 +246,9 @@ function renderOrders() {
         </td>
 
         <td>
-          ${text(o.status)}
+          <span class="badge-soft px-3 py-2 rounded-pill">
+            ${text(o.status)}
+          </span>
         </td>
 
         <td class="d-flex gap-2 flex-wrap">
@@ -281,15 +274,18 @@ function renderOrders() {
 }
 
 function getSelectedDress() {
+
   const dressId =
     Number(dressSelect.value);
 
   return dresses.find(
-    (d) => Number(d.dress_id) === dressId
+    (d) =>
+      Number(d.dress_id) === dressId
   ) || null;
 }
 
 function getPriceForSelectedDress() {
+
   const dress =
     getSelectedDress();
 
@@ -303,6 +299,7 @@ function getPriceForSelectedDress() {
 }
 
 function autofillTotalPrice(force = false) {
+
   const suggestedPrice =
     getPriceForSelectedDress();
 
@@ -333,6 +330,7 @@ function autofillTotalPrice(force = false) {
 }
 
 function toggleReturnDate() {
+
   const isRental =
     orderTypeInput.value === "rental";
 
@@ -369,11 +367,16 @@ function clearOrderForm() {
 
   orderForm.reset();
 
-  orderDateInput.value =
+  const today =
     todayString();
 
+  orderDateInput.value = today;
+  orderDateInput.min = today;
+
+  returnDateInput.min = today;
+
   statusInput.value =
-    "in_progress";
+    "pending";
 
   orderTypeInput.value = "";
 
@@ -384,6 +387,7 @@ function clearOrderForm() {
   priceWasAutoFilled = false;
 
   toggleReturnDate();
+
   autofillTotalPrice(true);
 }
 
@@ -426,7 +430,7 @@ window.editOrder =
       order.total_price ?? "";
 
     statusInput.value =
-      order.status || "in_progress";
+      order.status || "pending";
 
     venueCityInput.value =
       order.venue_city || "";
@@ -488,6 +492,23 @@ orderForm?.addEventListener(
   async (e) => {
 
     e.preventDefault();
+
+    if (
+      orderDateInput.value &&
+      orderDateInput.value < todayString()
+    ) {
+      alert("Order date cannot be in the past.");
+      return;
+    }
+
+    if (
+      orderTypeInput.value === "rental" &&
+      returnDateInput.value &&
+      returnDateInput.value < orderDateInput.value
+    ) {
+      alert("Return date must be after order date.");
+      return;
+    }
 
     const payload = {
 
@@ -587,10 +608,6 @@ resetBtn?.addEventListener(
 
     if (searchInput) {
       searchInput.value = "";
-    }
-
-    if (statusFilter) {
-      statusFilter.value = "";
     }
 
     loadOrders();

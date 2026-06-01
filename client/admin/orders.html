@@ -85,139 +85,53 @@
 
           <input type="hidden" id="order_id" />
 
-          <!-- CUSTOMER -->
           <div class="col-md-6">
             <label class="label-soft">Customer</label>
-
-            <select
-              id="customer_id"
-              class="form-select"
-              required
-            ></select>
+            <select id="customer_id" class="form-select" required></select>
           </div>
 
-          <!-- DRESS -->
           <div class="col-md-6">
             <label class="label-soft">Dress</label>
-
-            <select
-              id="dress_id"
-              class="form-select"
-              required
-            ></select>
+            <select id="dress_id" class="form-select" required></select>
           </div>
 
-          <!-- ORDER TYPE -->
           <div class="col-md-4">
             <label class="label-soft">Order Type</label>
-
-            <select
-              id="order_type"
-              class="form-select"
-              required
-            >
-              <option value="" disabled selected>
-                Select type
-              </option>
-
-              <option value="rental">
-                Rental
-              </option>
-
-              <option value="sale">
-                Sale
-              </option>
+            <select id="order_type" class="form-select" required>
+              <option value="" disabled selected>Select type</option>
+              <option value="rental">Rental</option>
+              <option value="sale">Sale</option>
             </select>
           </div>
 
-          <!-- OCCASION -->
           <div class="col-md-4">
             <label class="label-soft">Occasion</label>
-
-            <select
-              id="occasion_type"
-              class="form-select"
-            >
-              <option value="">
-                Select occasion
-              </option>
-
-              <option value="Wedding">
-                Wedding
-              </option>
-
-              <option value="Engagement">
-                Engagement
-              </option>
-
-              <option value="Henna">
-                Henna
-              </option>
-
-              <option value="Contract">
-                Contract
-              </option>
-
-              <option value="Fatiha">
-                Fatiha
-              </option>
-
-              <option value="Graduation">
-                Graduation
-              </option>
-
-              <option value="Evening Event">
-                Evening Event
-              </option>
-
-              <option value="Other">
-                Other
-              </option>
+            <select id="occasion_type" class="form-select">
+              <option value="">Select occasion</option>
+              <option value="Wedding">Wedding</option>
+              <option value="Engagement Party">Engagement Party</option>
+              <option value="Contract">Contract</option>
+              <option value="Fatiha">Fatiha</option>
+              <option value="Henna">Henna</option>
+              <option value="Other">Other</option>
             </select>
           </div>
 
-          <!-- CUSTOMER TYPE -->
           <div class="col-md-4">
             <label class="label-soft">Customer Type</label>
-
-            <select
-              id="customer_type"
-              class="form-select"
-            >
-              <option value="">
-                Select type
-              </option>
-
-              <option value="Bride">
-                Bride
-              </option>
-
-              <option value="Bride Sister">
-                Bride / Groom Sister
-              </option>
-
-              <option value="Bride Mother">
-                Bride / Groom Mother
-              </option>
-
-              <option value="Bridesmaid">
-                Bridesmaid
-              </option>
-
-              <option value="Friend">
-                Friend
-              </option>
-
-              <option value="Guest">
-                Guest
-              </option>
+            <select id="customer_type" class="form-select">
+              <option value="">Select type</option>
+              <option value="Bride">Bride</option>
+              <option value="Bride / Groom Sister">Bride / Groom Sister</option>
+              <option value="Bride / Groom Mother">Bride / Groom Mother</option>
+              <option value="Bridesmaid">Bridesmaid</option>
+              <option value="Friend">Friend</option>
+              <option value="Guest">Guest</option>
             </select>
           </div>
 
-          <!-- ORDER DATE -->
           <div class="col-md-4">
             <label class="label-soft">Order Date</label>
-
             <input
               id="order_date"
               type="date"
@@ -226,10 +140,8 @@
             />
           </div>
 
-          <!-- RETURN DATE -->
           <div class="col-md-4" id="returnDateWrap">
             <label class="label-soft">Return Date</label>
-
             <input
               id="return_date"
               type="date"
@@ -237,10 +149,8 @@
             />
           </div>
 
-          <!-- TOTAL -->
           <div class="col-md-4">
             <label class="label-soft">Total Price</label>
-
             <input
               id="total_price"
               type="number"
@@ -252,12 +162,8 @@
             />
           </div>
 
-          <!-- VENUE CITY -->
           <div class="col-md-6">
-            <label class="label-soft">
-              Venue City
-            </label>
-
+            <label class="label-soft">Venue City</label>
             <input
               id="venue_city"
               class="form-control"
@@ -265,12 +171,8 @@
             />
           </div>
 
-          <!-- VENUE HALL -->
           <div class="col-md-6">
-            <label class="label-soft">
-              Venue Hall
-            </label>
-
+            <label class="label-soft">Venue Hall</label>
             <input
               id="venue_hall"
               class="form-control"
@@ -278,120 +180,51 @@
             />
           </div>
 
-          <!-- PREVIOUS EXPERIENCE -->
           <div class="col-md-4">
-            <label class="label-soft">
-              Previous Experience?
-            </label>
-
-            <select
-              id="has_previous_experience"
-              class="form-select"
-            >
-              <option value="0">
-                No
-              </option>
-
-              <option value="1">
-                Yes
-              </option>
+            <label class="label-soft">Previous Experience?</label>
+            <select id="has_previous_experience" class="form-select">
+              <option value="0">No</option>
+              <option value="1">Yes</option>
             </select>
           </div>
 
-          <!-- EXPERIENCE TYPE -->
           <div class="col-md-4">
-            <label class="label-soft">
-              Experience Type
-            </label>
-
-            <select
-              id="previous_experience_type"
-              class="form-select"
-            >
-              <option value="">
-                Select type
-              </option>
-
-              <option value="design">
-                Design
-              </option>
-
-              <option value="rental">
-                Rental
-              </option>
+            <label class="label-soft">Experience Type</label>
+            <select id="previous_experience_type" class="form-select">
+              <option value="">Select type</option>
+              <option value="design">Design</option>
+              <option value="rental">Rental</option>
             </select>
           </div>
 
-          <!-- EXPERIENCE RATING -->
           <div class="col-md-4">
-            <label class="label-soft">
-              Experience Rating
-            </label>
-
-            <select
-              id="experience_rating"
-              class="form-select"
-            >
-              <option value="">
-                Select rating
-              </option>
-
-              <option value="1">
-                1 - Bad
-              </option>
-
-              <option value="2">
-                2 - Fair
-              </option>
-
-              <option value="3">
-                3 - Good
-              </option>
-
-              <option value="4">
-                4 - Very Good
-              </option>
-
-              <option value="5">
-                5 - Excellent
-              </option>
+            <label class="label-soft">Experience Rating</label>
+            <select id="experience_rating" class="form-select">
+              <option value="">Select rating</option>
+              <option value="1">1 - Not Satisfied</option>
+              <option value="2">2 - Fair</option>
+              <option value="3">3 - Good</option>
+              <option value="4">4 - Very Good</option>
+              <option value="5">5 - Excellent</option>
             </select>
           </div>
 
-          <!-- STATUS -->
           <div class="col-md-4">
-            <label class="label-soft">
-              Status
-            </label>
-
-            <select
-              id="status"
-              class="form-select"
-            >
-              <option value="in_progress">
-                In Progress
-              </option>
-
-              <option value="sewing">
-                Sewing
-              </option>
-
-              <option value="ready_for_fitting">
-                Ready For Fitting
-              </option>
-
-              <option value="completed">
-                Completed
-              </option>
+            <label class="label-soft">Status</label>
+            <select id="status" class="form-select">
+              <option value="pending">Pending</option>
+              <option value="in_progress">In Progress</option>
+              <option value="sewing">Sewing</option>
+              <option value="ready_for_fitting">Ready For Fitting</option>
+              <option value="ready">Ready</option>
+              <option value="delivered">Delivered</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
             </select>
           </div>
 
-          <!-- BUTTONS -->
           <div class="col-md-6 d-grid">
-            <button
-              class="btn btn-primary"
-              type="submit"
-            >
+            <button class="btn btn-primary" type="submit">
               Save
             </button>
           </div>
@@ -411,21 +244,16 @@
       </div>
     </div>
 
-    <!-- TABLE -->
     <div class="card card-luxe">
 
       <div class="card-header d-flex justify-content-between">
         <span>Orders</span>
-
-        <span id="ordersCount">
-          0
-        </span>
+        <span id="ordersCount">0</span>
       </div>
 
       <div class="card-body table-responsive">
 
         <table class="table">
-
           <thead>
             <tr>
               <th>#</th>
@@ -436,14 +264,11 @@
               <th>Customer Type</th>
               <th>Total</th>
               <th>Status</th>
-              <th style="width:320px;">
-                Actions
-              </th>
+              <th style="width:320px;">Actions</th>
             </tr>
           </thead>
 
           <tbody id="ordersTbody"></tbody>
-
         </table>
 
       </div>

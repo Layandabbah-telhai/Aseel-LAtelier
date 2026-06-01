@@ -247,8 +247,9 @@ function renderRequests(occasionRows, changeRows) {
           <td>
             <div>
               <strong>Current:</strong>
-              ${escapeHtml(formatDate(r.current_date))}
-              ${escapeHtml(formatTime(r.current_time))}
+              ${escapeHtml(formatDate(r.current_appointment_date
+))}
+              ${escapeHtml(formatTime(r.current_appointment_time))}
             </div>
 
             <div class="mt-1">

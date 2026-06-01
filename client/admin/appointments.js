@@ -27,6 +27,67 @@ let customers = [];
 let orders = [];
 let appointments = [];
 
+const SALE_APPOINTMENTS = [
+  "First Consultation",
+  "Design Selection",
+  "Fabric Selection",
+  "First Fitting",
+  "Second Fitting",
+  "Final Fitting",
+  "Pickup",
+];
+
+const RENTAL_APPOINTMENTS = [
+  "Rental Fitting",
+  "Final Adjustments",
+  "Dress Pickup",
+  "Dress Return",
+];
+
+function populateAppointmentTypes(orderType = "") {
+
+  const type =
+    String(orderType || "")
+      .trim()
+      .toLowerCase();
+
+  let options = [];
+
+  if (type === "sale") {
+    options = SALE_APPOINTMENTS;
+  } else if (type === "rental") {
+    options = RENTAL_APPOINTMENTS;
+  } else {
+    options = [
+      "Consultation",
+      "Fitting",
+    ];
+  }
+
+  appointmentTypeInput.innerHTML =
+    options.map((option) => `
+      <option value="${option}">
+        ${option}
+      </option>
+    `).join("");
+}
+
+function getSelectedOrder() {
+  const id = Number(orderSelect.value);
+
+  return orders.find(
+    (o) => Number(o.order_id) === id
+  );
+}
+
+function syncAppointmentTypesWithOrder() {
+  const order = getSelectedOrder();
+
+  populateAppointmentTypes(
+    order?.order_type || ""
+  );
+}
+
 function dateOnly(value) {
   if (!value) return "";
 
@@ -39,6 +100,7 @@ function dateOnly(value) {
 
 function todayString() {
   const now = new Date();
+
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, "0");
   const d = String(now.getDate()).padStart(2, "0");
@@ -100,6 +162,7 @@ async function loadOrders() {
     `<option value="">No order</option>` +
     orders
       .map((o) => {
+
         const customerName =
           o.customer_name ||
           `${o.first_name || ""} ${o.last_name || ""}`.trim();
@@ -117,6 +180,7 @@ async function loadOrders() {
 }
 
 async function loadAppointments() {
+
   const params = new URLSearchParams();
 
   if (searchInput.value.trim()) {
@@ -143,10 +207,12 @@ async function loadAppointments() {
 }
 
 function renderAppointments() {
+
   appointmentsCount.textContent =
     `${appointments.length} appointments`;
 
   if (!appointments.length) {
+
     appointmentsTbody.innerHTML = `
       <tr>
         <td colspan="11" class="text-center py-4">
@@ -154,6 +220,7 @@ function renderAppointments() {
         </td>
       </tr>
     `;
+
     return;
   }
 
@@ -161,6 +228,7 @@ function renderAppointments() {
     appointments
       .map((a) => `
         <tr>
+
           <td>${a.appointment_id}</td>
 
           <td>
@@ -204,6 +272,7 @@ function renderAppointments() {
           <td>${text(a.notes)}</td>
 
           <td class="d-flex gap-2 flex-wrap">
+
             <button
               class="btn btn-sm btn-outline-secondary"
               onclick="editAppointment(${a.appointment_id})"
@@ -217,13 +286,16 @@ function renderAppointments() {
             >
               Delete
             </button>
+
           </td>
+
         </tr>
       `)
       .join("");
 }
 
 function clearForm() {
+
   appointmentIdInput.value = "";
 
   appointmentForm.reset();
@@ -235,11 +307,11 @@ function clearForm() {
 
   statusInput.value = "Scheduled";
 
-  appointmentTypeInput.value =
-    "Consultation";
+  populateAppointmentTypes("");
 }
 
 function validateAppointmentBeforeSave() {
+
   const today = todayString();
 
   if (appointmentDateInput.value < today) {
@@ -255,6 +327,7 @@ function validateAppointmentBeforeSave() {
   }
 
   const duplicate = appointments.some((a) => {
+
     const sameDate =
       dateOnly(a.appointment_date) === appointmentDateInput.value;
 
@@ -277,6 +350,7 @@ function validateAppointmentBeforeSave() {
 }
 
 window.editAppointment = function (id) {
+
   const appointment =
     appointments.find(
       (a) =>
@@ -295,10 +369,12 @@ window.editAppointment = function (id) {
   orderSelect.value =
     appointment.order_id || "";
 
+  syncAppointmentTypesWithOrder();
+
   appointmentTypeInput.value =
     appointment.appointment_type ||
     appointment.type ||
-    "Consultation";
+    appointmentTypeInput.value;
 
   appointmentDateInput.value =
     dateOnly(
@@ -340,6 +416,7 @@ window.deleteAppointment =
   }
 
   try {
+
     await fetchJson(
       `${ENDPOINT}/${id}`,
       {
@@ -350,6 +427,7 @@ window.deleteAppointment =
     await loadAppointments();
 
   } catch (err) {
+
     alert(err.message);
   }
 };
@@ -365,6 +443,7 @@ appointmentForm.addEventListener(
     }
 
     const payload = {
+
       customer_id:
         Number(customerSelect.value),
 
@@ -402,7 +481,9 @@ appointmentForm.addEventListener(
       : ENDPOINT;
 
     try {
+
       await fetchJson(url, {
+
         method,
 
         headers: {
@@ -420,6 +501,7 @@ appointmentForm.addEventListener(
       await loadAppointments();
 
     } catch (err) {
+
       alert(err.message);
     }
   }
@@ -447,6 +529,11 @@ cancelEditBtn.addEventListener(
   clearForm
 );
 
+orderSelect.addEventListener(
+  "change",
+  syncAppointmentTypesWithOrder
+);
+
 (async function init() {
 
   try {
@@ -466,6 +553,7 @@ cancelEditBtn.addEventListener(
     await loadAppointments();
 
   } catch (err) {
+
     alert(err.message);
   }
 })();

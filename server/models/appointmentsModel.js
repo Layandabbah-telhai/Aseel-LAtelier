@@ -34,48 +34,61 @@ class AppointmentsModel {
     }
 
     const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
-
     const [rows] = await this.db.query(
       `
-      SELECT
-        a.appointment_id,
-        a.customer_id,
-        a.order_id,
-        a.appointment_type,
-        a.appointment_date,
-        a.appointment_time,
-        a.status,
-        a.notes,
+  SELECT
+    r.request_id,
+    r.appointment_id,
+    r.customer_id,
+    r.order_id,
+    r.\`current_date\`,
+    r.\`current_time\`,
+    r.requested_date,
+    r.requested_time,
+    r.reason,
+    r.status,
+    r.created_at,
+    r.decided_at,
 
-        c.first_name,
-        c.last_name,
-        c.phone,
+    c.first_name,
+    c.last_name,
+    c.phone,
+    c.email,
 
-        o.order_type,
-        o.occasion_type,
+    a.appointment_type,
+    a.appointment_date,
+    a.appointment_time,
 
-        d.dress_name
+    o.order_type,
+    o.occasion_type,
 
-      FROM \`${this.table}\` a
+    d.dress_name
 
-      JOIN \`${this.customersTable}\` c
-        ON c.customer_id = a.customer_id
+  FROM \`${this.changeRequestsTable}\` r
 
-      LEFT JOIN \`${this.ordersTable}\` o
-        ON o.order_id = a.order_id
+  JOIN \`${this.customersTable}\` c
+    ON c.customer_id = r.customer_id
 
-      LEFT JOIN \`${this.dressesTable}\` d
-        ON d.dress_id = o.dress_id
+  JOIN \`${this.table}\` a
+    ON a.appointment_id = r.appointment_id
 
-      ${whereSql}
+  JOIN \`${this.ordersTable}\` o
+    ON o.order_id = r.order_id
 
-      ORDER BY
-        a.appointment_date DESC,
-        a.appointment_time DESC,
-        a.appointment_id DESC
+  LEFT JOIN \`${this.dressesTable}\` d
+    ON d.dress_id = o.dress_id
 
-      LIMIT 500
-      `,
+  ${whereSql}
+
+  ORDER BY
+    CASE r.status
+      WHEN 'pending' THEN 1
+      WHEN 'accepted' THEN 2
+      WHEN 'rejected' THEN 3
+      ELSE 4
+    END,
+    r.created_at DESC
+  `,
       params
     );
 
@@ -94,27 +107,19 @@ class AppointmentsModel {
         a.appointment_time,
         a.status,
         a.notes,
-
         c.first_name,
         c.last_name,
         c.phone,
-
         o.order_type,
         o.occasion_type,
-
         d.dress_name
-
       FROM \`${this.table}\` a
-
       JOIN \`${this.customersTable}\` c
         ON c.customer_id = a.customer_id
-
       LEFT JOIN \`${this.ordersTable}\` o
         ON o.order_id = a.order_id
-
       LEFT JOIN \`${this.dressesTable}\` d
         ON d.dress_id = o.dress_id
-
       WHERE a.appointment_id = ?
       `,
       [appointment_id]
@@ -247,7 +252,9 @@ class AppointmentsModel {
     );
 
     if (existingPending.length) {
-      const err = new Error("There is already a pending change request for this appointment.");
+      const err = new Error(
+        "There is already a pending change request for this appointment."
+      );
       err.status = 400;
       throw err;
     }
@@ -259,8 +266,8 @@ class AppointmentsModel {
         appointment_id,
         customer_id,
         order_id,
-        current_date,
-        current_time,
+        \`current_date\`,
+        \`current_time\`,
         requested_date,
         requested_time,
         reason,
@@ -302,45 +309,34 @@ class AppointmentsModel {
         r.appointment_id,
         r.customer_id,
         r.order_id,
-        r.current_date,
-        r.current_time,
+        r.\`current_date\` AS current_appointment_date,
+        r.\`current_time\` AS current_appointment_time,
         r.requested_date,
         r.requested_time,
         r.reason,
         r.status,
         r.created_at,
         r.decided_at,
-
         c.first_name,
         c.last_name,
         c.phone,
         c.email,
-
         a.appointment_type,
         a.appointment_date,
         a.appointment_time,
-
         o.order_type,
         o.occasion_type,
-
         d.dress_name
-
       FROM \`${this.changeRequestsTable}\` r
-
       JOIN \`${this.customersTable}\` c
         ON c.customer_id = r.customer_id
-
       JOIN \`${this.table}\` a
         ON a.appointment_id = r.appointment_id
-
       JOIN \`${this.ordersTable}\` o
         ON o.order_id = r.order_id
-
       LEFT JOIN \`${this.dressesTable}\` d
         ON d.dress_id = o.dress_id
-
       ${whereSql}
-
       ORDER BY
         CASE r.status
           WHEN 'pending' THEN 1
@@ -364,8 +360,8 @@ class AppointmentsModel {
         appointment_id,
         customer_id,
         order_id,
-        current_date,
-        current_time,
+        \`current_date\`,
+        \`current_time\`,
         requested_date,
         requested_time,
         reason,

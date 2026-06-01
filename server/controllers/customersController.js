@@ -1,148 +1,235 @@
-class OccasionRequestsController {
-  constructor(occasionRequestsModel) {
-    this.model = occasionRequestsModel;
+class CustomersController {
+  constructor(model) {
+    this.model = model;
+
+    this.list = this.list.bind(this);
+    this.get = this.get.bind(this);
+    this.create = this.create.bind(this);
+    this.update = this.update.bind(this);
+    this.remove = this.remove.bind(this);
   }
 
-  createCustomerRequest = async (req, res) => {
+  async list(req, res) {
     try {
-      const {
-        customer_id,
-        occasion_type,
-        event_date,
-        order_type,
-        notes,
-
-        venue_city,
-        venue_hall,
-        customer_type,
-        has_previous_experience,
-        previous_experience_type,
-        experience_rating,
-      } = req.body || {};
-
-      if (!customer_id || !occasion_type || !order_type) {
-        return res.status(400).json({
-          message: "Missing required fields",
-        });
-      }
-
-      const result = await this.model.create({
-        customer_id,
-        occasion_type,
-        event_date,
-        order_type,
-        notes,
-
-        venue_city,
-        venue_hall,
-        customer_type,
-        has_previous_experience:
-          has_previous_experience === true ||
-          has_previous_experience === 1 ||
-          has_previous_experience === "1",
-        previous_experience_type,
-        experience_rating:
-          experience_rating === "" ||
-          experience_rating === null ||
-          experience_rating === undefined
-            ? null
-            : Number(experience_rating),
+      const rows = await this.model.list({
+        search: req.query.search || "",
       });
 
-      res.status(201).json(result);
+      res.json(rows);
     } catch (err) {
-      console.error("OCCASION REQUEST ERROR:", err);
+      console.error("CUSTOMERS LIST ERROR:", err);
 
       res.status(500).json({
         message: "Server error",
         error: String(err),
       });
     }
-  };
+  }
 
-  listCustomerRequests = async (req, res) => {
+  async get(req, res) {
     try {
-      const customerId = Number(req.params.customerId);
+      const id = Number(req.params.id);
 
-      if (!Number.isFinite(customerId)) {
+      if (!Number.isFinite(id)) {
         return res.status(400).json({
           message: "Invalid customer id",
         });
       }
 
-      const rows = await this.model.listByCustomer(customerId);
-      res.json(rows);
+      const row =
+        await this.model.getById(id);
+
+      if (!row) {
+        return res.status(404).json({
+          message: "Customer not found",
+        });
+      }
+
+      res.json(row);
+
     } catch (err) {
-      console.error("CUSTOMER OCCASION REQUESTS ERROR:", err);
+
+      console.error("CUSTOMER GET ERROR:", err);
 
       res.status(500).json({
         message: "Server error",
         error: String(err),
       });
     }
-  };
+  }
 
-  listAllRequests = async (req, res) => {
+  async create(req, res) {
     try {
-      const rows = await this.model.listAll();
-      res.json(rows);
+
+      const {
+        first_name,
+        last_name,
+        city,
+        phone,
+        birth_date,
+        email,
+      } = req.body || {};
+
+      if (
+        !first_name ||
+        !last_name ||
+        !phone
+      ) {
+        return res.status(400).json({
+          message:
+            "First name, last name and phone are required",
+        });
+      }
+
+      const created =
+        await this.model.create({
+          first_name:
+            String(first_name).trim(),
+
+          last_name:
+            String(last_name).trim(),
+
+          city:
+            city
+              ? String(city).trim()
+              : null,
+
+          phone:
+            String(phone).trim(),
+
+          birth_date:
+            birth_date || null,
+
+          email:
+            email
+              ? String(email).trim()
+              : null,
+        });
+
+      res.status(201).json(created);
+
     } catch (err) {
-      console.error("GET OCCASION REQUESTS ERROR:", err);
+
+      console.error("CUSTOMER CREATE ERROR:", err);
 
       res.status(500).json({
         message: "Server error",
         error: String(err),
       });
     }
-  };
+  }
 
-  updateStatus = async (req, res) => {
+  async update(req, res) {
     try {
-      const requestId = Number(req.params.id);
-      const { status, admin_notes } = req.body || {};
 
-      if (!Number.isFinite(requestId)) {
+      const id =
+        Number(req.params.id);
+
+      if (!Number.isFinite(id)) {
         return res.status(400).json({
-          message: "Invalid request id",
+          message: "Invalid customer id",
         });
       }
 
-      if (!status) {
+      const {
+        first_name,
+        last_name,
+        city,
+        phone,
+        birth_date,
+        email,
+      } = req.body || {};
+
+      if (
+        !first_name ||
+        !last_name ||
+        !phone
+      ) {
         return res.status(400).json({
-          message: "Status is required",
+          message:
+            "First name, last name and phone are required",
         });
       }
 
-      const cleanStatus = String(status).trim().toLowerCase();
+      const updated =
+        await this.model.update(id, {
+          first_name:
+            String(first_name).trim(),
 
-      if (!["accepted", "rejected"].includes(cleanStatus)) {
-        return res.status(400).json({
-          message: "Status must be accepted or rejected",
+          last_name:
+            String(last_name).trim(),
+
+          city:
+            city
+              ? String(city).trim()
+              : null,
+
+          phone:
+            String(phone).trim(),
+
+          birth_date:
+            birth_date || null,
+
+          email:
+            email
+              ? String(email).trim()
+              : null,
+        });
+
+      if (!updated) {
+        return res.status(404).json({
+          message: "Customer not found",
         });
       }
 
-      const result = await this.model.decideRequest(
-        requestId,
-        cleanStatus,
-        admin_notes || null
-      );
+      res.json(updated);
 
-      if (!result.ok) {
-        return res.status(result.statusCode || 400).json({
-          message: result.message,
-        });
-      }
-
-      res.json(result);
     } catch (err) {
-      console.error("UPDATE OCCASION REQUEST ERROR:", err);
+
+      console.error("CUSTOMER UPDATE ERROR:", err);
 
       res.status(500).json({
         message: "Server error",
         error: String(err),
       });
     }
-  };
+  }
+
+  async remove(req, res) {
+    try {
+
+      const id =
+        Number(req.params.id);
+
+      if (!Number.isFinite(id)) {
+        return res.status(400).json({
+          message: "Invalid customer id",
+        });
+      }
+
+      const ok =
+        await this.model.remove(id);
+
+      if (!ok) {
+        return res.status(404).json({
+          message: "Customer not found",
+        });
+      }
+
+      res.json({
+        message: "Customer deleted successfully",
+      });
+
+    } catch (err) {
+
+      console.error("CUSTOMER DELETE ERROR:", err);
+
+      res.status(500).json({
+        message: "Server error",
+        error: String(err),
+      });
+    }
+  }
 }
 
-module.exports = OccasionRequestsController;
+module.exports = CustomersController;

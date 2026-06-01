@@ -11,6 +11,13 @@ class OccasionRequestsController {
         event_date,
         order_type,
         notes,
+
+        venue_city,
+        venue_hall,
+        customer_type,
+        has_previous_experience,
+        previous_experience_type,
+        experience_rating,
       } = req.body || {};
 
       if (!customer_id || !occasion_type || !order_type) {
@@ -25,6 +32,21 @@ class OccasionRequestsController {
         event_date,
         order_type,
         notes,
+
+        venue_city,
+        venue_hall,
+        customer_type,
+        has_previous_experience:
+          has_previous_experience === true ||
+          has_previous_experience === 1 ||
+          has_previous_experience === "1",
+        previous_experience_type,
+        experience_rating:
+          experience_rating === "" ||
+          experience_rating === null ||
+          experience_rating === undefined
+            ? null
+            : Number(experience_rating),
       });
 
       res.status(201).json(result);

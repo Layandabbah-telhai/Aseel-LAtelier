@@ -131,11 +131,11 @@ function renderProgressTimeline(status) {
       <h5>Dress Progress</h5>
       <div class="d-flex flex-wrap gap-2">
         ${steps
-          .map((step, index) => {
-            const done = index <= current;
-            const active = index === current;
+      .map((step, index) => {
+        const done = index <= current;
+        const active = index === current;
 
-            return `
+        return `
               <div
                 class="px-3 py-2 rounded-pill border"
                 style="
@@ -148,8 +148,8 @@ function renderProgressTimeline(status) {
                 ${done ? "✓" : "○"} ${escapeHtml(step)}
               </div>
             `;
-          })
-          .join("")}
+      })
+      .join("")}
       </div>
     </div>
   `;
@@ -213,10 +213,9 @@ function renderDashboard(data, occasionRequests = []) {
 
     ${renderMyOccasionRequests(occasionRequests)}
 
-    ${
-      orders.length
-        ? orders.map(renderOrderCard).join("")
-        : `
+    ${orders.length
+      ? orders.map(renderOrderCard).join("")
+      : `
           <div class="card card-luxe">
             <div class="card-body text-center small-muted">
               You do not have any orders yet.
@@ -343,6 +342,7 @@ function renderNewOccasionRequest() {
     </div>
   `;
 }
+
 function bindOccasionExperienceToggle() {
   const hasExperienceSelect =
     document.getElementById("occasion_has_previous_experience");
@@ -419,8 +419,8 @@ function renderMyOccasionRequests(requests) {
 
             <tbody>
               ${requests
-                .map(
-                  (r) => `
+      .map(
+        (r) => `
                 <tr>
                   <td>${escapeHtml(r.request_id)}</td>
 
@@ -432,11 +432,10 @@ function renderMyOccasionRequests(requests) {
 
                   <td>
                     ${escapeHtml(r.venue_city || "-")}
-                    ${
-                      r.venue_hall
-                        ? `<div class="small-muted">${escapeHtml(r.venue_hall)}</div>`
-                        : ""
-                    }
+                    ${r.venue_hall
+            ? `<div class="small-muted">${escapeHtml(r.venue_hall)}</div>`
+            : ""
+          }
                   </td>
 
                   <td>${escapeHtml(r.customer_type || "-")}</td>
@@ -446,8 +445,8 @@ function renderMyOccasionRequests(requests) {
                   <td>${escapeHtml(r.admin_notes || "-")}</td>
                 </tr>
               `
-                )
-                .join("")}
+      )
+      .join("")}
             </tbody>
           </table>
         </div>
@@ -535,148 +534,9 @@ function renderOrderCard(order) {
 
             </div>
 
-            ${renderAppointmentRequest(order)}
-
             ${renderAppointments(order.appointments)}
 
           </div>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function renderAppointmentRequest(order) {
-  const status = normalizeStatus(order.status);
-
-  if (
-    status === "completed" ||
-    status === "delivered" ||
-    status === "cancelled"
-  ) {
-    return `
-      <div class="mb-4">
-        <h5 class="mb-3">Request Appointment</h5>
-
-        <div class="alert alert-secondary rounded-4 mb-0">
-          This order is completed,
-          appointments can no longer be requested.
-        </div>
-      </div>
-    `;
-  }
-
-  const hasPendingCustomerRequest =
-    Array.isArray(order.appointments) &&
-    order.appointments.some((appointment) => {
-      return (
-        normalizeStatus(appointment.status) === "pending" &&
-        String(appointment.requested_by || "").toLowerCase() === "customer"
-      );
-    });
-
-  if (hasPendingCustomerRequest) {
-    return `
-      <div class="mb-4">
-        <h5 class="mb-3">Request Appointment</h5>
-
-        <div class="alert alert-warning rounded-4 mb-0">
-          You already have a pending appointment request.
-          Please wait for atelier confirmation.
-        </div>
-      </div>
-    `;
-  }
-
-  const orderType = String(order.order_type || "")
-    .trim()
-    .toLowerCase();
-
-  let appointmentOptions = [];
-
-  if (orderType === "sale") {
-    appointmentOptions = [
-      "First Consultation",
-      "Design Selection",
-      "Fabric Selection",
-      "First Fitting",
-      "Second Fitting",
-      "Final Fitting",
-      "Pickup",
-    ];
-  } else if (orderType === "rental") {
-    appointmentOptions = [
-      "Rental Fitting",
-      "Final Adjustments",
-      "Dress Pickup",
-      "Dress Return",
-    ];
-  } else {
-    appointmentOptions = ["Consultation", "Fitting"];
-  }
-
-  return `
-    <div class="mb-4">
-      <h5 class="mb-3">Request Appointment</h5>
-
-      <div class="card border-0 bg-light rounded-4">
-        <div class="card-body">
-
-          <div class="row g-3">
-
-            <div class="col-md-4">
-              <select
-                class="form-select"
-                id="request_type_${order.order_id}"
-              >
-                ${appointmentOptions
-                  .map(
-                    (option) => `
-                  <option value="${escapeHtml(option)}">
-                    ${escapeHtml(option)}
-                  </option>
-                `
-                  )
-                  .join("")}
-              </select>
-            </div>
-
-            <div class="col-md-4">
-              <input
-                type="date"
-                class="form-control"
-                id="request_date_${order.order_id}"
-              >
-            </div>
-
-            <div class="col-md-4">
-              <input
-                type="time"
-                class="form-control"
-                id="request_time_${order.order_id}"
-              >
-            </div>
-
-          </div>
-
-          <div class="mt-3">
-            <textarea
-              class="form-control"
-              rows="3"
-              placeholder="Notes..."
-              id="request_notes_${order.order_id}"
-            ></textarea>
-          </div>
-
-          <div class="mt-3">
-            <button
-              class="btn btn-dark"
-              onclick="submitAppointmentRequest(${order.order_id})"
-            >
-              Submit Request
-            </button>
-          </div>
-
         </div>
       </div>
     </div>
@@ -691,6 +551,7 @@ function renderAppointments(appointments) {
 
         <div class="small-muted">
           No appointments yet.
+          The designer will schedule appointments for this order.
         </div>
       </div>
     `;
@@ -715,8 +576,8 @@ function renderAppointments(appointments) {
 
           <tbody>
             ${appointments
-              .map(
-                (a) => `
+      .map(
+        (a) => `
               <tr>
                 <td>${formatDate(a.appointment_date)}</td>
 
@@ -733,8 +594,8 @@ function renderAppointments(appointments) {
                 </td>
               </tr>
             `
-              )
-              .join("")}
+      )
+      .join("")}
           </tbody>
 
         </table>
@@ -865,50 +726,6 @@ async function submitAppointmentChangeRequest(appointmentId, orderId) {
   }
 }
 
-async function submitAppointmentRequest(orderId) {
-  try {
-    const type =
-      document.getElementById(`request_type_${orderId}`)?.value;
-
-    const appointment_date =
-      document.getElementById(`request_date_${orderId}`)?.value;
-
-    const appointment_time =
-      document.getElementById(`request_time_${orderId}`)?.value;
-
-    const notes =
-      document.getElementById(`request_notes_${orderId}`)?.value;
-
-    if (!appointment_date || !appointment_time) {
-      alert("Please select appointment date and time.");
-      return;
-    }
-
-    await fetchJson(`${API_BASE}/customer-appointment-request`, {
-      method: "POST",
-
-      headers: {
-        "Content-Type": "application/json",
-      },
-
-      body: JSON.stringify({
-        customer_id: user.customer_id,
-        order_id: orderId,
-        appointment_date,
-        appointment_time,
-        type,
-        notes,
-      }),
-    });
-
-    alert("Appointment request submitted!");
-
-    await loadDashboard();
-  } catch (err) {
-    alert(err.message || "Failed to submit request");
-  }
-}
-
 async function submitOccasionRequest() {
   try {
     const occasion_type =
@@ -997,7 +814,6 @@ async function submitOccasionRequest() {
   }
 }
 
-window.submitAppointmentRequest = submitAppointmentRequest;
 window.submitOccasionRequest = submitOccasionRequest;
 window.openChangeRequestForm = openChangeRequestForm;
 window.submitAppointmentChangeRequest = submitAppointmentChangeRequest;
