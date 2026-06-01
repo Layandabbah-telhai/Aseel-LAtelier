@@ -30,24 +30,17 @@ function yesNo(value) {
 
 function ratingLabel(value) {
   switch (String(value || "")) {
-    case "1":
-      return "1 - Not Satisfied";
-    case "2":
-      return "2 - Fair";
-    case "3":
-      return "3 - Good";
-    case "4":
-      return "4 - Very Good";
-    case "5":
-      return "5 - Excellent";
-    default:
-      return "-";
+    case "1": return "1 - Not Satisfied";
+    case "2": return "2 - Fair";
+    case "3": return "3 - Good";
+    case "4": return "4 - Very Good";
+    case "5": return "5 - Excellent";
+    default: return "-";
   }
 }
 
 async function fetchJson(url, options = {}) {
   const res = await fetch(url, options);
-
   const payload = await res.json().catch(() => null);
 
   if (!res.ok) {
@@ -117,98 +110,115 @@ function renderRequests(occasionRows, changeRows) {
       </tr>
     `;
 
-    tbody.innerHTML += pendingOccasionRows
-      .map((r) => `
-        <tr>
-          <td>${escapeHtml(r.request_id)}</td>
+    tbody.innerHTML += pendingOccasionRows.map((r) => `
+      <tr>
+        <td>${escapeHtml(r.request_id)}</td>
 
-          <td>
-            <strong>
-              ${escapeHtml(r.first_name || "")}
-              ${escapeHtml(r.last_name || "")}
-            </strong>
+        <td>
+          <strong>
+            ${escapeHtml(r.first_name || "")}
+            ${escapeHtml(r.last_name || "")}
+          </strong>
 
-            <div class="small-muted">
-              ${escapeHtml(r.phone || "")}
-            </div>
+          <div class="small-muted">${escapeHtml(r.phone || "")}</div>
+          <div class="small-muted">${escapeHtml(r.email || "")}</div>
+        </td>
 
-            <div class="small-muted">
-              ${escapeHtml(r.email || "")}
-            </div>
-          </td>
+        <td>
+          <div><strong>Occasion:</strong> ${escapeHtml(r.occasion_type || "-")}</div>
+          <div><strong>Customer Type:</strong> ${escapeHtml(r.customer_type || "-")}</div>
+          <div><strong>Request:</strong> ${escapeHtml(r.order_type || "-")}</div>
+        </td>
 
-          <td>
-            <div><strong>Occasion:</strong> ${escapeHtml(r.occasion_type || "-")}</div>
-            <div><strong>Customer Type:</strong> ${escapeHtml(r.customer_type || "-")}</div>
-            <div><strong>Request:</strong> ${escapeHtml(r.order_type || "-")}</div>
-          </td>
+        <td>
+          <div><strong>Date:</strong> ${escapeHtml(formatDate(r.event_date))}</div>
+          <div><strong>City:</strong> ${escapeHtml(r.venue_city || "-")}</div>
+          <div><strong>Hall:</strong> ${escapeHtml(r.venue_hall || "-")}</div>
+        </td>
 
-          <td>
-            <div><strong>Date:</strong> ${escapeHtml(formatDate(r.event_date))}</div>
-            <div><strong>City:</strong> ${escapeHtml(r.venue_city || "-")}</div>
-            <div><strong>Hall:</strong> ${escapeHtml(r.venue_hall || "-")}</div>
-          </td>
+        <td>
+          <div>
+            <strong>Previous:</strong>
+            ${escapeHtml(yesNo(Number(r.has_previous_experience)))}
+          </div>
 
-          <td>
-            <div>
-              <strong>Previous:</strong>
-              ${escapeHtml(yesNo(Number(r.has_previous_experience)))}
-            </div>
+          ${
+            Number(r.has_previous_experience)
+              ? `
+                <div>
+                  <strong>Type:</strong>
+                  ${escapeHtml(r.previous_experience_type || "-")}
+                </div>
 
-            ${
-              Number(r.has_previous_experience)
-                ? `
-                  <div>
-                    <strong>Type:</strong>
-                    ${escapeHtml(r.previous_experience_type || "-")}
-                  </div>
+                <div>
+                  <strong>Rating:</strong>
+                  ${escapeHtml(ratingLabel(r.experience_rating))}
+                </div>
+              `
+              : ""
+          }
+        </td>
 
-                  <div>
-                    <strong>Rating:</strong>
-                    ${escapeHtml(ratingLabel(r.experience_rating))}
-                  </div>
-                `
-                : ""
-            }
-          </td>
+        <td>${escapeHtml(r.notes || "-")}</td>
 
-          <td>
-            ${escapeHtml(r.notes || "-")}
-          </td>
+        <td>
+          <span class="badge-soft px-3 py-2 rounded-pill">
+            Pending
+          </span>
+        </td>
 
-          <td>
-            <span class="badge-soft px-3 py-2 rounded-pill">
-              Pending
-            </span>
-          </td>
+        <td>
+          <div class="row g-2 mb-2">
+            <div class="col-12">
+              <label class="small-muted">
+                First appointment date
+              </label>
 
-          <td>
-            <textarea
-              class="form-control form-control-sm mb-2"
-              rows="2"
-              placeholder="Admin notes..."
-              id="admin_notes_${r.request_id}"
-            ></textarea>
-
-            <div class="d-flex gap-2">
-              <button
-                class="btn btn-sm btn-success"
-                onclick="updateRequestStatus(${Number(r.request_id)}, 'accepted')"
+              <input
+                type="date"
+                class="form-control form-control-sm"
+                id="first_appointment_date_${r.request_id}"
               >
-                Accept
-              </button>
-
-              <button
-                class="btn btn-sm btn-outline-danger"
-                onclick="updateRequestStatus(${Number(r.request_id)}, 'rejected')"
-              >
-                Reject
-              </button>
             </div>
-          </td>
-        </tr>
-      `)
-      .join("");
+
+            <div class="col-12">
+              <label class="small-muted">
+                First appointment time
+              </label>
+
+              <input
+                type="time"
+                class="form-control form-control-sm"
+                id="first_appointment_time_${r.request_id}"
+              >
+            </div>
+          </div>
+
+          <textarea
+            class="form-control form-control-sm mb-2"
+            rows="2"
+            placeholder="Admin notes..."
+            id="admin_notes_${r.request_id}"
+          ></textarea>
+
+          <div class="d-flex gap-2">
+            <button
+              class="btn btn-sm btn-success"
+              onclick="updateRequestStatus(${Number(r.request_id)}, 'accepted')"
+            >
+              Accept
+            </button>
+
+            <button
+              class="btn btn-sm btn-outline-danger"
+              onclick="updateRequestStatus(${Number(r.request_id)}, 'rejected')"
+            >
+              Reject
+            </button>
+          </div>
+        </td>
+      </tr>
+    `).join("");
   }
 
   if (pendingChangeRows.length) {
@@ -220,79 +230,65 @@ function renderRequests(occasionRows, changeRows) {
       </tr>
     `;
 
-    tbody.innerHTML += pendingChangeRows
-      .map((r) => `
-        <tr>
-          <td>${escapeHtml(r.request_id)}</td>
+    tbody.innerHTML += pendingChangeRows.map((r) => `
+      <tr>
+        <td>${escapeHtml(r.request_id)}</td>
 
-          <td>
-            <strong>
-              ${escapeHtml(r.first_name || "")}
-              ${escapeHtml(r.last_name || "")}
-            </strong>
+        <td>
+          <strong>
+            ${escapeHtml(r.first_name || "")}
+            ${escapeHtml(r.last_name || "")}
+          </strong>
 
-            <div class="small-muted">
-              ${escapeHtml(r.phone || "")}
-            </div>
+          <div class="small-muted">${escapeHtml(r.phone || "")}</div>
+          <div class="small-muted">${escapeHtml(r.email || "")}</div>
+        </td>
 
-            <div class="small-muted">
-              ${escapeHtml(r.email || "")}
-            </div>
-          </td>
+        <td>${escapeHtml(r.appointment_type || "-")}</td>
 
-          <td>
-            ${escapeHtml(r.appointment_type || "-")}
-          </td>
+        <td>
+          <div>
+            <strong>Current:</strong>
+            ${escapeHtml(formatDate(r.current_appointment_date))}
+            ${escapeHtml(formatTime(r.current_appointment_time))}
+          </div>
 
-          <td>
-            <div>
-              <strong>Current:</strong>
-              ${escapeHtml(formatDate(r.current_appointment_date
-))}
-              ${escapeHtml(formatTime(r.current_appointment_time))}
-            </div>
+          <div class="mt-1">
+            <strong>Requested:</strong>
+            ${escapeHtml(formatDate(r.requested_date))}
+            ${escapeHtml(formatTime(r.requested_time))}
+          </div>
+        </td>
 
-            <div class="mt-1">
-              <strong>Requested:</strong>
-              ${escapeHtml(formatDate(r.requested_date))}
-              ${escapeHtml(formatTime(r.requested_time))}
-            </div>
-          </td>
+        <td>${escapeHtml(r.order_type || "-")}</td>
 
-          <td>
-            ${escapeHtml(r.order_type || "-")}
-          </td>
+        <td>${escapeHtml(r.reason || "-")}</td>
 
-          <td>
-            ${escapeHtml(r.reason || "-")}
-          </td>
+        <td>
+          <span class="badge-soft px-3 py-2 rounded-pill">
+            Pending
+          </span>
+        </td>
 
-          <td>
-            <span class="badge-soft px-3 py-2 rounded-pill">
-              Pending
-            </span>
-          </td>
+        <td>
+          <div class="d-flex gap-2">
+            <button
+              class="btn btn-sm btn-success"
+              onclick="updateChangeRequestStatus(${Number(r.request_id)}, 'accepted')"
+            >
+              Accept
+            </button>
 
-          <td>
-            <div class="d-flex gap-2">
-              <button
-                class="btn btn-sm btn-success"
-                onclick="updateChangeRequestStatus(${Number(r.request_id)}, 'accepted')"
-              >
-                Accept
-              </button>
-
-              <button
-                class="btn btn-sm btn-outline-danger"
-                onclick="updateChangeRequestStatus(${Number(r.request_id)}, 'rejected')"
-              >
-                Reject
-              </button>
-            </div>
-          </td>
-        </tr>
-      `)
-      .join("");
+            <button
+              class="btn btn-sm btn-outline-danger"
+              onclick="updateChangeRequestStatus(${Number(r.request_id)}, 'rejected')"
+            >
+              Reject
+            </button>
+          </div>
+        </td>
+      </tr>
+    `).join("");
   }
 }
 
@@ -301,9 +297,22 @@ window.updateRequestStatus = async function (requestId, status) {
     const notes =
       document.getElementById(`admin_notes_${requestId}`)?.value || "";
 
+    const firstAppointmentDate =
+      document.getElementById(`first_appointment_date_${requestId}`)?.value || "";
+
+    const firstAppointmentTime =
+      document.getElementById(`first_appointment_time_${requestId}`)?.value || "";
+
+    if (status === "accepted") {
+      if (!firstAppointmentDate || !firstAppointmentTime) {
+        alert("Please choose first appointment date and time.");
+        return;
+      }
+    }
+
     const confirmMessage =
       status === "accepted"
-        ? "Accept this request and create a new order?"
+        ? "Accept this request, create a new order, and schedule the first appointment?"
         : "Reject this request?";
 
     if (!confirm(confirmMessage)) return;
@@ -318,11 +327,15 @@ window.updateRequestStatus = async function (requestId, status) {
       body: JSON.stringify({
         status,
         admin_notes: notes.trim(),
+        first_appointment_date: firstAppointmentDate,
+        first_appointment_time: firstAppointmentTime,
       }),
     });
 
     if (status === "accepted" && result.order_id) {
-      alert(`Request accepted. Order #${result.order_id} was created.`);
+      alert(
+        `Request accepted. Order #${result.order_id} was created and first appointment was scheduled.`
+      );
     } else {
       alert(result.message || "Request updated successfully.");
     }
@@ -349,9 +362,7 @@ window.updateChangeRequestStatus = async function (requestId, status) {
         "Content-Type": "application/json",
       },
 
-      body: JSON.stringify({
-        status,
-      }),
+      body: JSON.stringify({ status }),
     });
 
     alert(

@@ -71,6 +71,7 @@ class OccasionRequestsController {
       }
 
       const rows = await this.model.listByCustomer(customerId);
+
       res.json(rows);
     } catch (err) {
       console.error("CUSTOMER OCCASION REQUESTS ERROR:", err);
@@ -85,6 +86,7 @@ class OccasionRequestsController {
   listAllRequests = async (req, res) => {
     try {
       const rows = await this.model.listAll();
+
       res.json(rows);
     } catch (err) {
       console.error("GET OCCASION REQUESTS ERROR:", err);
@@ -99,7 +101,13 @@ class OccasionRequestsController {
   updateStatus = async (req, res) => {
     try {
       const requestId = Number(req.params.id);
-      const { status, admin_notes } = req.body || {};
+
+      const {
+        status,
+        admin_notes,
+        first_appointment_date,
+        first_appointment_time,
+      } = req.body || {};
 
       if (!Number.isFinite(requestId)) {
         return res.status(400).json({
@@ -121,10 +129,22 @@ class OccasionRequestsController {
         });
       }
 
+      if (cleanStatus === "accepted") {
+        if (!first_appointment_date || !first_appointment_time) {
+          return res.status(400).json({
+            message: "First appointment date and time are required",
+          });
+        }
+      }
+
       const result = await this.model.decideRequest(
         requestId,
         cleanStatus,
-        admin_notes || null
+        admin_notes || null,
+        {
+          first_appointment_date,
+          first_appointment_time,
+        }
       );
 
       if (!result.ok) {

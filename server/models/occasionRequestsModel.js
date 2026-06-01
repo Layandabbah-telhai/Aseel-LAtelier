@@ -5,12 +5,13 @@ class OccasionRequestsModel {
     this.requestsTable = "occasion_requests";
     this.customersTable = "customers";
     this.ordersTable = "orders";
+    this.appointmentsTable = process.env.APPOINTMENTS_TABLE || "appointments";
   }
 
   async create(data) {
     const [result] = await this.db.query(
       `
-      INSERT INTO ${this.requestsTable}
+      INSERT INTO \`${this.requestsTable}\`
       (
         customer_id,
         occasion_type,
@@ -71,7 +72,7 @@ class OccasionRequestsModel {
         has_previous_experience,
         previous_experience_type,
         experience_rating
-      FROM ${this.requestsTable}
+      FROM \`${this.requestsTable}\`
       WHERE customer_id = ?
       ORDER BY created_at DESC
       `,
@@ -106,8 +107,8 @@ class OccasionRequestsModel {
         c.last_name,
         c.phone,
         c.email
-      FROM ${this.requestsTable} r
-      LEFT JOIN ${this.customersTable} c
+      FROM \`${this.requestsTable}\` r
+      LEFT JOIN \`${this.customersTable}\` c
         ON c.customer_id = r.customer_id
       ORDER BY r.created_at DESC
       `
@@ -116,7 +117,7 @@ class OccasionRequestsModel {
     return rows;
   }
 
-  async decideRequest(requestId, status, adminNotes) {
+  async decideRequest(requestId, status, adminNotes, appointmentData = {}) {
     const connection = await this.db.getConnection();
 
     try {
@@ -140,7 +141,7 @@ class OccasionRequestsModel {
           has_previous_experience,
           previous_experience_type,
           experience_rating
-        FROM ${this.requestsTable}
+        FROM \`${this.requestsTable}\`
         WHERE request_id = ?
         LIMIT 1
         `,
@@ -179,7 +180,7 @@ class OccasionRequestsModel {
 
         const [orderResult] = await connection.query(
           `
-          INSERT INTO ${this.ordersTable}
+          INSERT INTO \`${this.ordersTable}\`
           (
             customer_id,
             dress_id,
@@ -218,11 +219,41 @@ class OccasionRequestsModel {
         );
 
         createdOrderId = orderResult.insertId;
+
+        const firstAppointmentType =
+          orderType === "rental"
+            ? "Rental Fitting"
+            : "First Consultation";
+
+        await connection.query(
+          `
+          INSERT INTO \`${this.appointmentsTable}\`
+          (
+            customer_id,
+            order_id,
+            appointment_type,
+            appointment_date,
+            appointment_time,
+            status,
+            notes
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+          `,
+          [
+            Number(request.customer_id),
+            createdOrderId,
+            firstAppointmentType,
+            appointmentData.first_appointment_date,
+            appointmentData.first_appointment_time,
+            "Scheduled",
+            "First appointment created automatically when the occasion request was accepted.",
+          ]
+        );
       }
 
       await connection.query(
         `
-        UPDATE ${this.requestsTable}
+        UPDATE \`${this.requestsTable}\`
         SET
           status = ?,
           admin_notes = ?
@@ -237,7 +268,7 @@ class OccasionRequestsModel {
         ok: true,
         message:
           cleanStatus === "accepted"
-            ? "Request accepted and order created successfully"
+            ? "Request accepted, order created, and first appointment scheduled successfully"
             : "Request rejected successfully",
         order_id: createdOrderId,
       };
