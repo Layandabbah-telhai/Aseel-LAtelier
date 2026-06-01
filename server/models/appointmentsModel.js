@@ -8,7 +8,14 @@ class AppointmentsModel {
     this.dressesTable = process.env.DRESSES_TABLE || "dresses";
   }
 
-  async list({ search = "", status = "" } = {}) {
+  async list({
+    search = "",
+    status = "",
+    order_id = "",
+    date = "",
+    date_from = "",
+    date_to = "",
+  } = {}) {
     const where = [];
     const params = [];
 
@@ -31,64 +38,75 @@ class AppointmentsModel {
     if (status.trim()) {
       where.push(`a.status = ?`);
       params.push(status.trim());
+    } else {
+      where.push(`a.status = 'Scheduled'`);
     }
 
-    const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
+    if (order_id && String(order_id).trim()) {
+      where.push(`a.order_id = ?`);
+      params.push(Number(order_id));
+    }
+
+    if (date && String(date).trim()) {
+      where.push(`a.appointment_date = ?`);
+      params.push(date);
+    }
+
+    if (date_from && String(date_from).trim()) {
+      where.push(`a.appointment_date >= ?`);
+      params.push(date_from);
+    }
+
+    if (date_to && String(date_to).trim()) {
+      where.push(`a.appointment_date <= ?`);
+      params.push(date_to);
+    }
+
+    const whereSql =
+      where.length
+        ? `WHERE ${where.join(" AND ")}`
+        : "";
+
     const [rows] = await this.db.query(
       `
-  SELECT
-    r.request_id,
-    r.appointment_id,
-    r.customer_id,
-    r.order_id,
-    r.\`current_date\`,
-    r.\`current_time\`,
-    r.requested_date,
-    r.requested_time,
-    r.reason,
-    r.status,
-    r.created_at,
-    r.decided_at,
+      SELECT
+        a.appointment_id,
+        a.customer_id,
+        a.order_id,
+        a.appointment_type,
+        DATE_FORMAT(a.appointment_date, '%Y-%m-%d') AS appointment_date,
+        TIME_FORMAT(a.appointment_time, '%H:%i') AS appointment_time,
+        a.status,
+        a.notes,
 
-    c.first_name,
-    c.last_name,
-    c.phone,
-    c.email,
+        c.first_name,
+        c.last_name,
+        c.phone,
+        c.email,
 
-    a.appointment_type,
-    a.appointment_date,
-    a.appointment_time,
+        o.order_type,
+        o.occasion_type,
 
-    o.order_type,
-    o.occasion_type,
+        d.dress_name
 
-    d.dress_name
+      FROM \`${this.table}\` a
 
-  FROM \`${this.changeRequestsTable}\` r
+      JOIN \`${this.customersTable}\` c
+        ON c.customer_id = a.customer_id
 
-  JOIN \`${this.customersTable}\` c
-    ON c.customer_id = r.customer_id
+      LEFT JOIN \`${this.ordersTable}\` o
+        ON o.order_id = a.order_id
 
-  JOIN \`${this.table}\` a
-    ON a.appointment_id = r.appointment_id
+      LEFT JOIN \`${this.dressesTable}\` d
+        ON d.dress_id = o.dress_id
 
-  JOIN \`${this.ordersTable}\` o
-    ON o.order_id = r.order_id
+      ${whereSql}
 
-  LEFT JOIN \`${this.dressesTable}\` d
-    ON d.dress_id = o.dress_id
-
-  ${whereSql}
-
-  ORDER BY
-    CASE r.status
-      WHEN 'pending' THEN 1
-      WHEN 'accepted' THEN 2
-      WHEN 'rejected' THEN 3
-      ELSE 4
-    END,
-    r.created_at DESC
-  `,
+      ORDER BY
+        a.appointment_date ASC,
+        a.appointment_time ASC,
+        a.appointment_id ASC
+      `,
       params
     );
 
@@ -103,23 +121,31 @@ class AppointmentsModel {
         a.customer_id,
         a.order_id,
         a.appointment_type,
-        a.appointment_date,
-        a.appointment_time,
+        DATE_FORMAT(a.appointment_date, '%Y-%m-%d') AS appointment_date,
+        TIME_FORMAT(a.appointment_time, '%H:%i') AS appointment_time,
         a.status,
         a.notes,
+
         c.first_name,
         c.last_name,
         c.phone,
+
         o.order_type,
         o.occasion_type,
+
         d.dress_name
+
       FROM \`${this.table}\` a
+
       JOIN \`${this.customersTable}\` c
         ON c.customer_id = a.customer_id
+
       LEFT JOIN \`${this.ordersTable}\` o
         ON o.order_id = a.order_id
+
       LEFT JOIN \`${this.dressesTable}\` d
         ON d.dress_id = o.dress_id
+
       WHERE a.appointment_id = ?
       `,
       [appointment_id]
@@ -226,8 +252,8 @@ class AppointmentsModel {
       `
       SELECT
         appointment_id,
-        appointment_date,
-        appointment_time
+        DATE_FORMAT(appointment_date, '%Y-%m-%d') AS appointment_date,
+        TIME_FORMAT(appointment_time, '%H:%i') AS appointment_time
       FROM \`${this.table}\`
       WHERE appointment_id = ?
       `,
@@ -300,7 +326,10 @@ class AppointmentsModel {
       params.push(status.trim());
     }
 
-    const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
+    const whereSql =
+      where.length
+        ? `WHERE ${where.join(" AND ")}`
+        : "";
 
     const [rows] = await this.db.query(
       `
@@ -309,34 +338,45 @@ class AppointmentsModel {
         r.appointment_id,
         r.customer_id,
         r.order_id,
-        r.\`current_date\` AS current_appointment_date,
-        r.\`current_time\` AS current_appointment_time,
-        r.requested_date,
-        r.requested_time,
+        DATE_FORMAT(r.\`current_date\`, '%Y-%m-%d') AS current_appointment_date,
+        TIME_FORMAT(r.\`current_time\`, '%H:%i') AS current_appointment_time,
+        DATE_FORMAT(r.requested_date, '%Y-%m-%d') AS requested_date,
+        TIME_FORMAT(r.requested_time, '%H:%i') AS requested_time,
         r.reason,
         r.status,
         r.created_at,
         r.decided_at,
+
         c.first_name,
         c.last_name,
         c.phone,
         c.email,
+
         a.appointment_type,
-        a.appointment_date,
-        a.appointment_time,
+        DATE_FORMAT(a.appointment_date, '%Y-%m-%d') AS appointment_date,
+        TIME_FORMAT(a.appointment_time, '%H:%i') AS appointment_time,
+
         o.order_type,
         o.occasion_type,
+
         d.dress_name
+
       FROM \`${this.changeRequestsTable}\` r
+
       JOIN \`${this.customersTable}\` c
         ON c.customer_id = r.customer_id
+
       JOIN \`${this.table}\` a
         ON a.appointment_id = r.appointment_id
+
       JOIN \`${this.ordersTable}\` o
         ON o.order_id = r.order_id
+
       LEFT JOIN \`${this.dressesTable}\` d
         ON d.dress_id = o.dress_id
+
       ${whereSql}
+
       ORDER BY
         CASE r.status
           WHEN 'pending' THEN 1
@@ -360,10 +400,10 @@ class AppointmentsModel {
         appointment_id,
         customer_id,
         order_id,
-        \`current_date\`,
-        \`current_time\`,
-        requested_date,
-        requested_time,
+        DATE_FORMAT(\`current_date\`, '%Y-%m-%d') AS current_date,
+        TIME_FORMAT(\`current_time\`, '%H:%i') AS current_time,
+        DATE_FORMAT(requested_date, '%Y-%m-%d') AS requested_date,
+        TIME_FORMAT(requested_time, '%H:%i') AS requested_time,
         reason,
         status,
         created_at,
@@ -388,8 +428,8 @@ class AppointmentsModel {
         SELECT
           request_id,
           appointment_id,
-          requested_date,
-          requested_time,
+          DATE_FORMAT(requested_date, '%Y-%m-%d') AS requested_date,
+          TIME_FORMAT(requested_time, '%H:%i') AS requested_time,
           status
         FROM \`${this.changeRequestsTable}\`
         WHERE request_id = ?

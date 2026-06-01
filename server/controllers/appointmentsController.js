@@ -29,8 +29,8 @@ function normalizeInput(body) {
 
     order_id:
       body?.order_id === "" ||
-        body?.order_id === undefined ||
-        body?.order_id === null
+      body?.order_id === undefined ||
+      body?.order_id === null
         ? null
         : Number(body.order_id),
 
@@ -49,7 +49,9 @@ function normalizeInput(body) {
 }
 
 function validate(data) {
-  if (!Number.isFinite(data.customer_id)) return "customer_id is required";
+  if (!Number.isFinite(data.customer_id)) {
+    return "customer_id is required";
+  }
 
   if (data.order_id !== null && !Number.isFinite(data.order_id)) {
     return "order_id is invalid";
@@ -59,13 +61,17 @@ function validate(data) {
     return "invalid appointment_type";
   }
 
-  if (!data.appointment_date) return "appointment_date is required";
+  if (!data.appointment_date) {
+    return "appointment_date is required";
+  }
 
   if (!ALLOWED_APPOINTMENT_STATUS.includes(data.status)) {
     return "invalid status";
   }
 
-  if (data.notes.length > 2000) return "notes too long";
+  if (data.notes.length > 2000) {
+    return "notes too long";
+  }
 
   return null;
 }
@@ -129,12 +135,20 @@ class AppointmentsController {
       const rows = await this.model.list({
         search: req.query.search || "",
         status: req.query.status || "",
+        order_id: req.query.order_id || "",
+        date: req.query.date || "",
+        date_from: req.query.date_from || "",
+        date_to: req.query.date_to || "",
       });
 
       res.json(rows);
     } catch (err) {
       console.error("APPOINTMENTS LIST ERROR:", err);
-      res.status(500).json({ message: "Server error", error: String(err) });
+
+      res.status(500).json({
+        message: "Server error",
+        error: String(err),
+      });
     }
   }
 
@@ -143,19 +157,27 @@ class AppointmentsController {
       const id = Number(req.params.id);
 
       if (!Number.isFinite(id)) {
-        return res.status(400).json({ message: "Invalid id" });
+        return res.status(400).json({
+          message: "Invalid id",
+        });
       }
 
       const row = await this.model.getById(id);
 
       if (!row) {
-        return res.status(404).json({ message: "Not found" });
+        return res.status(404).json({
+          message: "Not found",
+        });
       }
 
       res.json(row);
     } catch (err) {
       console.error("APPOINTMENTS GET ERROR:", err);
-      res.status(500).json({ message: "Server error", error: String(err) });
+
+      res.status(500).json({
+        message: "Server error",
+        error: String(err),
+      });
     }
   }
 
@@ -166,7 +188,9 @@ class AppointmentsController {
       const errMsg = validate(data);
 
       if (errMsg) {
-        return res.status(400).json({ message: errMsg });
+        return res.status(400).json({
+          message: errMsg,
+        });
       }
 
       const created = await this.model.create(data);
@@ -174,7 +198,11 @@ class AppointmentsController {
       res.status(201).json(created);
     } catch (err) {
       console.error("APPOINTMENTS CREATE ERROR:", err);
-      res.status(500).json({ message: "Server error", error: String(err) });
+
+      res.status(500).json({
+        message: "Server error",
+        error: String(err),
+      });
     }
   }
 
@@ -183,7 +211,9 @@ class AppointmentsController {
       const id = Number(req.params.id);
 
       if (!Number.isFinite(id)) {
-        return res.status(400).json({ message: "Invalid id" });
+        return res.status(400).json({
+          message: "Invalid id",
+        });
       }
 
       const data = normalizeInput(req.body);
@@ -191,19 +221,27 @@ class AppointmentsController {
       const errMsg = validate(data);
 
       if (errMsg) {
-        return res.status(400).json({ message: errMsg });
+        return res.status(400).json({
+          message: errMsg,
+        });
       }
 
       const updated = await this.model.update(id, data);
 
       if (!updated) {
-        return res.status(404).json({ message: "Not found" });
+        return res.status(404).json({
+          message: "Not found",
+        });
       }
 
       res.json(updated);
     } catch (err) {
       console.error("APPOINTMENTS UPDATE ERROR:", err);
-      res.status(500).json({ message: "Server error", error: String(err) });
+
+      res.status(500).json({
+        message: "Server error",
+        error: String(err),
+      });
     }
   }
 
@@ -212,19 +250,29 @@ class AppointmentsController {
       const id = Number(req.params.id);
 
       if (!Number.isFinite(id)) {
-        return res.status(400).json({ message: "Invalid id" });
+        return res.status(400).json({
+          message: "Invalid id",
+        });
       }
 
       const ok = await this.model.remove(id);
 
       if (!ok) {
-        return res.status(404).json({ message: "Not found" });
+        return res.status(404).json({
+          message: "Not found",
+        });
       }
 
-      res.json({ message: "Deleted" });
+      res.json({
+        message: "Deleted",
+      });
     } catch (err) {
       console.error("APPOINTMENTS DELETE ERROR:", err);
-      res.status(500).json({ message: "Server error", error: String(err) });
+
+      res.status(500).json({
+        message: "Server error",
+        error: String(err),
+      });
     }
   }
 
@@ -237,7 +285,11 @@ class AppointmentsController {
       res.json(rows);
     } catch (err) {
       console.error("APPOINTMENT CHANGE REQUESTS LIST ERROR:", err);
-      res.status(500).json({ message: "Server error", error: String(err) });
+
+      res.status(500).json({
+        message: "Server error",
+        error: String(err),
+      });
     }
   }
 
@@ -248,7 +300,9 @@ class AppointmentsController {
       const errMsg = validateChangeRequestInput(data);
 
       if (errMsg) {
-        return res.status(400).json({ message: errMsg });
+        return res.status(400).json({
+          message: errMsg,
+        });
       }
 
       const created = await this.model.createChangeRequest(data);
@@ -270,7 +324,9 @@ class AppointmentsController {
       const status = String(req.body?.status || "").trim().toLowerCase();
 
       if (!Number.isFinite(id)) {
-        return res.status(400).json({ message: "Invalid request id" });
+        return res.status(400).json({
+          message: "Invalid request id",
+        });
       }
 
       if (!["accepted", "rejected"].includes(status)) {
