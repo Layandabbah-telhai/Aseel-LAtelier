@@ -119,7 +119,6 @@ function renderProgressTimeline(status) {
     return `
       <div class="mb-4">
         <h5>Dress Progress</h5>
-
         <div class="alert alert-danger rounded-4 mb-0">
           This order was cancelled.
         </div>
@@ -130,7 +129,6 @@ function renderProgressTimeline(status) {
   return `
     <div class="mb-4">
       <h5>Dress Progress</h5>
-
       <div class="d-flex flex-wrap gap-2">
         ${steps
           .map((step, index) => {
@@ -159,7 +157,6 @@ function renderProgressTimeline(status) {
 
 async function fetchJson(url, options = {}) {
   const res = await fetch(url, options);
-
   const payload = await res.json().catch(() => null);
 
   if (!res.ok) {
@@ -228,6 +225,8 @@ function renderDashboard(data, occasionRequests = []) {
         `
     }
   `;
+
+  bindOccasionExperienceToggle();
 }
 
 function renderNewOccasionRequest() {
@@ -237,29 +236,96 @@ function renderNewOccasionRequest() {
         <h3 class="mb-4">Request New Occasion</h3>
 
         <div class="row g-3">
+
           <div class="col-md-4">
+            <label class="label-soft">Occasion Type</label>
             <select class="form-select" id="occasion_type">
               <option value="Wedding">Wedding</option>
-              <option value="Engagement">Engagement</option>
+              <option value="Engagement Party">Engagement Party</option>
+              <option value="Contract">Contract</option>
+              <option value="Fatiha">Fatiha</option>
               <option value="Henna">Henna</option>
-              <option value="Graduation">Graduation</option>
-              <option value="Evening Event">Evening Event</option>
+              <option value="Other">Other</option>
             </select>
           </div>
 
           <div class="col-md-4">
+            <label class="label-soft">Request Type</label>
             <select class="form-select" id="occasion_order_type">
-              <option value="sale">Custom Design / Sale</option>
+              <option value="sale">Custom Design - request first appointment</option>
+              <option value="rental">Rental - request fitting appointment</option>
+            </select>
+          </div>
+
+          <div class="col-md-4">
+            <label class="label-soft">Occasion Date</label>
+            <input type="date" class="form-control" id="occasion_date">
+          </div>
+
+          <div class="col-md-6">
+            <label class="label-soft">Venue City</label>
+            <input
+              id="occasion_venue_city"
+              class="form-control"
+              placeholder="City"
+            >
+          </div>
+
+          <div class="col-md-6">
+            <label class="label-soft">Venue Hall</label>
+            <input
+              id="occasion_venue_hall"
+              class="form-control"
+              placeholder="Hall name"
+            >
+          </div>
+
+          <div class="col-md-6">
+            <label class="label-soft">Customer Type</label>
+            <select class="form-select" id="occasion_customer_type">
+              <option value="">Select customer type</option>
+              <option value="Bride">Bride</option>
+              <option value="Bride / Groom Sister">Bride / Groom Sister</option>
+              <option value="Bride / Groom Mother">Bride / Groom Mother</option>
+              <option value="Bridesmaid">Bridesmaid</option>
+              <option value="Friend">Friend</option>
+              <option value="Guest">Guest</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="label-soft">Previous Experience?</label>
+            <select class="form-select" id="occasion_has_previous_experience">
+              <option value="0">No</option>
+              <option value="1">Yes</option>
+            </select>
+          </div>
+
+          <div class="col-md-6" id="occasion_experience_type_wrap" style="display:none;">
+            <label class="label-soft">Previous Experience Type</label>
+            <select class="form-select" id="occasion_previous_experience_type">
+              <option value="">Select type</option>
+              <option value="design">Design</option>
               <option value="rental">Rental</option>
             </select>
           </div>
 
-          <div class="col-md-4">
-            <input type="date" class="form-control" id="occasion_date">
+          <div class="col-md-6" id="occasion_experience_rating_wrap" style="display:none;">
+            <label class="label-soft">Experience Rating</label>
+            <select class="form-select" id="occasion_experience_rating">
+              <option value="">Select rating</option>
+              <option value="1">1 - Not Satisfied</option>
+              <option value="2">2 - Fair</option>
+              <option value="3">3 - Good</option>
+              <option value="4">4 - Very Good</option>
+              <option value="5">5 - Excellent</option>
+            </select>
           </div>
+
         </div>
 
         <div class="mt-3">
+          <label class="label-soft">Notes</label>
           <textarea
             class="form-control"
             rows="3"
@@ -276,6 +342,44 @@ function renderNewOccasionRequest() {
       </div>
     </div>
   `;
+}
+function bindOccasionExperienceToggle() {
+  const hasExperienceSelect =
+    document.getElementById("occasion_has_previous_experience");
+
+  const typeWrap =
+    document.getElementById("occasion_experience_type_wrap");
+
+  const ratingWrap =
+    document.getElementById("occasion_experience_rating_wrap");
+
+  const typeInput =
+    document.getElementById("occasion_previous_experience_type");
+
+  const ratingInput =
+    document.getElementById("occasion_experience_rating");
+
+  function toggle() {
+    const hasExperience =
+      hasExperienceSelect?.value === "1";
+
+    if (typeWrap) {
+      typeWrap.style.display = hasExperience ? "" : "none";
+    }
+
+    if (ratingWrap) {
+      ratingWrap.style.display = hasExperience ? "" : "none";
+    }
+
+    if (!hasExperience) {
+      if (typeInput) typeInput.value = "";
+      if (ratingInput) ratingInput.value = "";
+    }
+  }
+
+  hasExperienceSelect?.addEventListener("change", toggle);
+
+  toggle();
 }
 
 function renderMyOccasionRequests(requests) {
@@ -306,6 +410,8 @@ function renderMyOccasionRequests(requests) {
                 <th>Occasion</th>
                 <th>Event Date</th>
                 <th>Order Type</th>
+                <th>Venue</th>
+                <th>Customer Type</th>
                 <th>Status</th>
                 <th>Admin Notes</th>
               </tr>
@@ -317,10 +423,26 @@ function renderMyOccasionRequests(requests) {
                   (r) => `
                 <tr>
                   <td>${escapeHtml(r.request_id)}</td>
+
                   <td>${escapeHtml(r.occasion_type || "-")}</td>
+
                   <td>${escapeHtml(formatDate(r.event_date))}</td>
+
                   <td>${escapeHtml(prettifyStatus(r.order_type || "-"))}</td>
+
+                  <td>
+                    ${escapeHtml(r.venue_city || "-")}
+                    ${
+                      r.venue_hall
+                        ? `<div class="small-muted">${escapeHtml(r.venue_hall)}</div>`
+                        : ""
+                    }
+                  </td>
+
+                  <td>${escapeHtml(r.customer_type || "-")}</td>
+
                   <td>${statusBadge(r.status)}</td>
+
                   <td>${escapeHtml(r.admin_notes || "-")}</td>
                 </tr>
               `
@@ -798,11 +920,29 @@ async function submitOccasionRequest() {
     const event_date =
       document.getElementById("occasion_date")?.value;
 
+    const venue_city =
+      document.getElementById("occasion_venue_city")?.value;
+
+    const venue_hall =
+      document.getElementById("occasion_venue_hall")?.value;
+
+    const customer_type =
+      document.getElementById("occasion_customer_type")?.value;
+
+    const has_previous_experience =
+      document.getElementById("occasion_has_previous_experience")?.value === "1";
+
+    const previous_experience_type =
+      document.getElementById("occasion_previous_experience_type")?.value;
+
+    const experience_rating =
+      document.getElementById("occasion_experience_rating")?.value;
+
     const notes =
       document.getElementById("occasion_notes")?.value;
 
     if (!occasion_type || !event_date || !order_type) {
-      alert("Please fill all required fields.");
+      alert("Please fill occasion type, date, and request type.");
       return;
     }
 
@@ -835,6 +975,17 @@ async function submitOccasionRequest() {
         event_date,
         order_type,
         notes,
+
+        venue_city,
+        venue_hall,
+        customer_type,
+        has_previous_experience,
+        previous_experience_type: has_previous_experience
+          ? previous_experience_type
+          : null,
+        experience_rating: has_previous_experience && experience_rating
+          ? Number(experience_rating)
+          : null,
       }),
     });
 

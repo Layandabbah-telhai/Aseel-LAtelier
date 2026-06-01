@@ -1,156 +1,148 @@
-function normalizeInput(body) {
-  return {
-    first_name: String(body?.first_name || "").trim(),
-    last_name: String(body?.last_name || "").trim(),
-    city: String(body?.city || "").trim(),
-    phone: String(body?.phone || "").trim(),
-    birth_date: body?.birth_date ? String(body.birth_date) : null,
-    email: body?.email ? String(body.email).trim() : null,
-    source_type: body?.source_type ? String(body.source_type).trim() : null,
-    source_details: body?.source_details ? String(body.source_details).trim() : null,
+class OccasionRequestsController {
+  constructor(occasionRequestsModel) {
+    this.model = occasionRequestsModel;
+  }
+
+  createCustomerRequest = async (req, res) => {
+    try {
+      const {
+        customer_id,
+        occasion_type,
+        event_date,
+        order_type,
+        notes,
+
+        venue_city,
+        venue_hall,
+        customer_type,
+        has_previous_experience,
+        previous_experience_type,
+        experience_rating,
+      } = req.body || {};
+
+      if (!customer_id || !occasion_type || !order_type) {
+        return res.status(400).json({
+          message: "Missing required fields",
+        });
+      }
+
+      const result = await this.model.create({
+        customer_id,
+        occasion_type,
+        event_date,
+        order_type,
+        notes,
+
+        venue_city,
+        venue_hall,
+        customer_type,
+        has_previous_experience:
+          has_previous_experience === true ||
+          has_previous_experience === 1 ||
+          has_previous_experience === "1",
+        previous_experience_type,
+        experience_rating:
+          experience_rating === "" ||
+          experience_rating === null ||
+          experience_rating === undefined
+            ? null
+            : Number(experience_rating),
+      });
+
+      res.status(201).json(result);
+    } catch (err) {
+      console.error("OCCASION REQUEST ERROR:", err);
+
+      res.status(500).json({
+        message: "Server error",
+        error: String(err),
+      });
+    }
+  };
+
+  listCustomerRequests = async (req, res) => {
+    try {
+      const customerId = Number(req.params.customerId);
+
+      if (!Number.isFinite(customerId)) {
+        return res.status(400).json({
+          message: "Invalid customer id",
+        });
+      }
+
+      const rows = await this.model.listByCustomer(customerId);
+      res.json(rows);
+    } catch (err) {
+      console.error("CUSTOMER OCCASION REQUESTS ERROR:", err);
+
+      res.status(500).json({
+        message: "Server error",
+        error: String(err),
+      });
+    }
+  };
+
+  listAllRequests = async (req, res) => {
+    try {
+      const rows = await this.model.listAll();
+      res.json(rows);
+    } catch (err) {
+      console.error("GET OCCASION REQUESTS ERROR:", err);
+
+      res.status(500).json({
+        message: "Server error",
+        error: String(err),
+      });
+    }
+  };
+
+  updateStatus = async (req, res) => {
+    try {
+      const requestId = Number(req.params.id);
+      const { status, admin_notes } = req.body || {};
+
+      if (!Number.isFinite(requestId)) {
+        return res.status(400).json({
+          message: "Invalid request id",
+        });
+      }
+
+      if (!status) {
+        return res.status(400).json({
+          message: "Status is required",
+        });
+      }
+
+      const cleanStatus = String(status).trim().toLowerCase();
+
+      if (!["accepted", "rejected"].includes(cleanStatus)) {
+        return res.status(400).json({
+          message: "Status must be accepted or rejected",
+        });
+      }
+
+      const result = await this.model.decideRequest(
+        requestId,
+        cleanStatus,
+        admin_notes || null
+      );
+
+      if (!result.ok) {
+        return res.status(result.statusCode || 400).json({
+          message: result.message,
+        });
+      }
+
+      res.json(result);
+    } catch (err) {
+      console.error("UPDATE OCCASION REQUEST ERROR:", err);
+
+      res.status(500).json({
+        message: "Server error",
+        error: String(err),
+      });
+    }
   };
 }
 
-function validate(data) {
-  if (!data.first_name) return "first_name is required";
-  if (!data.last_name) return "last_name is required";
-  if (!data.phone) return "phone is required";
-
-  if (data.first_name.length > 50) return "first_name too long";
-  if (data.last_name.length > 50) return "last_name too long";
-  if (data.city.length > 100) return "city too long";
-  if (data.phone.length > 20) return "phone too long";
-  if (data.email && data.email.length > 100) return "email too long";
-  if (data.source_type && data.source_type.length > 50) return "source_type too long";
-  if (data.source_details && data.source_details.length > 255) return "source_details too long";
-
-  return null;
-}
-
-function isDuplicatePhoneError(err) {
-  return String(err).includes("Duplicate entry") && String(err).includes("phone");
-}
-
-class CustomersController {
-  constructor(model) {
-    this.model = model;
-
-    this.list = this.list.bind(this);
-    this.get = this.get.bind(this);
-    this.create = this.create.bind(this);
-    this.update = this.update.bind(this);
-    this.remove = this.remove.bind(this);
-  }
-
-  async list(req, res) {
-    try {
-      const rows = await this.model.list({ search: req.query.search || "" });
-      res.json(rows);
-    } catch (err) {
-      console.error("CUSTOMERS LIST ERROR:", err);
-      res.status(500).json({ message: "Server error", error: String(err) });
-    }
-  }
-
-  async get(req, res) {
-    try {
-      const id = Number(req.params.id);
-
-      if (!Number.isFinite(id)) {
-        return res.status(400).json({ message: "Invalid id" });
-      }
-
-      const row = await this.model.getById(id);
-
-      if (!row) {
-        return res.status(404).json({ message: "Not found" });
-      }
-
-      res.json(row);
-    } catch (err) {
-      console.error("CUSTOMERS GET ERROR:", err);
-      res.status(500).json({ message: "Server error", error: String(err) });
-    }
-  }
-
-  async create(req, res) {
-    try {
-      const data = normalizeInput(req.body);
-
-      const errMsg = validate(data);
-
-      if (errMsg) {
-        return res.status(400).json({ message: errMsg });
-      }
-
-      const created = await this.model.create(data);
-
-      res.status(201).json(created);
-    } catch (err) {
-      console.error("CUSTOMERS CREATE ERROR:", err);
-
-      if (isDuplicatePhoneError(err)) {
-        return res.status(409).json({ message: "Phone already exists" });
-      }
-
-      res.status(500).json({ message: "Server error", error: String(err) });
-    }
-  }
-
-  async update(req, res) {
-    try {
-      const id = Number(req.params.id);
-
-      if (!Number.isFinite(id)) {
-        return res.status(400).json({ message: "Invalid id" });
-      }
-
-      const data = normalizeInput(req.body);
-
-      const errMsg = validate(data);
-
-      if (errMsg) {
-        return res.status(400).json({ message: errMsg });
-      }
-
-      const updated = await this.model.update(id, data);
-
-      if (!updated) {
-        return res.status(404).json({ message: "Not found" });
-      }
-
-      res.json(updated);
-    } catch (err) {
-      console.error("CUSTOMERS UPDATE ERROR:", err);
-
-      if (isDuplicatePhoneError(err)) {
-        return res.status(409).json({ message: "Phone already exists" });
-      }
-
-      res.status(500).json({ message: "Server error", error: String(err) });
-    }
-  }
-
-  async remove(req, res) {
-    try {
-      const id = Number(req.params.id);
-
-      if (!Number.isFinite(id)) {
-        return res.status(400).json({ message: "Invalid id" });
-      }
-
-      const ok = await this.model.remove(id);
-
-      if (!ok) {
-        return res.status(404).json({ message: "Not found" });
-      }
-
-      res.json({ message: "Deleted" });
-    } catch (err) {
-      console.error("CUSTOMERS DELETE ERROR:", err);
-      res.status(500).json({ message: "Server error", error: String(err) });
-    }
-  }
-}
-
-module.exports = CustomersController;
+module.exports = OccasionRequestsController;

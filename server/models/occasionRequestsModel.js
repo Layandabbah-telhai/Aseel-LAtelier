@@ -17,9 +17,16 @@ class OccasionRequestsModel {
         event_date,
         order_type,
         notes,
-        status
+        status,
+
+        venue_city,
+        venue_hall,
+        customer_type,
+        has_previous_experience,
+        previous_experience_type,
+        experience_rating
       )
-      VALUES (?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         Number(data.customer_id),
@@ -28,6 +35,13 @@ class OccasionRequestsModel {
         data.order_type,
         data.notes || null,
         "pending",
+
+        data.venue_city || null,
+        data.venue_hall || null,
+        data.customer_type || null,
+        data.has_previous_experience ? 1 : 0,
+        data.previous_experience_type || null,
+        data.experience_rating || null,
       ]
     );
 
@@ -49,7 +63,14 @@ class OccasionRequestsModel {
         notes,
         status,
         admin_notes,
-        created_at
+        created_at,
+
+        venue_city,
+        venue_hall,
+        customer_type,
+        has_previous_experience,
+        previous_experience_type,
+        experience_rating
       FROM ${this.requestsTable}
       WHERE customer_id = ?
       ORDER BY created_at DESC
@@ -73,6 +94,14 @@ class OccasionRequestsModel {
         r.status,
         r.admin_notes,
         r.created_at,
+
+        r.venue_city,
+        r.venue_hall,
+        r.customer_type,
+        r.has_previous_experience,
+        r.previous_experience_type,
+        r.experience_rating,
+
         c.first_name,
         c.last_name,
         c.phone,
@@ -103,7 +132,14 @@ class OccasionRequestsModel {
           occasion_type,
           event_date,
           order_type,
-          status
+          status,
+
+          venue_city,
+          venue_hall,
+          customer_type,
+          has_previous_experience,
+          previous_experience_type,
+          experience_rating
         FROM ${this.requestsTable}
         WHERE request_id = ?
         LIMIT 1
@@ -113,6 +149,7 @@ class OccasionRequestsModel {
 
       if (!requestRows.length) {
         await connection.rollback();
+
         return {
           ok: false,
           statusCode: 404,
@@ -124,6 +161,7 @@ class OccasionRequestsModel {
 
       if (String(request.status).toLowerCase() !== "pending") {
         await connection.rollback();
+
         return {
           ok: false,
           statusCode: 400,
@@ -150,9 +188,16 @@ class OccasionRequestsModel {
             order_date,
             return_date,
             total_price,
-            status
+            status,
+
+            customer_type,
+            venue_city,
+            venue_hall,
+            has_previous_experience,
+            previous_experience_type,
+            experience_rating
           )
-          VALUES (?, ?, ?, ?, CURDATE(), ?, ?, ?)
+          VALUES (?, ?, ?, ?, CURDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `,
           [
             Number(request.customer_id),
@@ -162,6 +207,13 @@ class OccasionRequestsModel {
             orderType === "rental" ? request.event_date || null : null,
             0,
             "pending",
+
+            request.customer_type || null,
+            request.venue_city || null,
+            request.venue_hall || null,
+            request.has_previous_experience ? 1 : 0,
+            request.previous_experience_type || null,
+            request.experience_rating || null,
           ]
         );
 
