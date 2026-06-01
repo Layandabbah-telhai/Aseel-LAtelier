@@ -22,7 +22,7 @@
     <div class="mb-4 d-flex justify-content-between align-items-start gap-3 flex-wrap">
       <div>
         <h1 class="hero-title mb-2">Order Details</h1>
-        <p class="hero-sub mb-0">Full overview of the selected order.</p>
+        <p class="hero-sub mb-0">Customer case file and full order overview.</p>
       </div>
 
       <a href="orders.html" class="btn btn-outline-secondary">
@@ -37,109 +37,200 @@
     <div id="detailsWrap" style="display:none;">
 
       <div class="card card-luxe mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <span>Order Information</span>
-          <button id="editOrderBtn" class="btn btn-sm btn-outline-primary">
-            Edit Order
-          </button>
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+            <div>
+              <div class="small-muted mb-1">Customer Case File</div>
+              <h2 class="mb-2" id="caseCustomerName">-</h2>
+
+              <div class="d-flex gap-2 flex-wrap">
+                <span class="badge-soft px-3 py-2 rounded-pill" id="caseOrderStatus">-</span>
+                <span class="badge-soft px-3 py-2 rounded-pill" id="casePaymentStatus">-</span>
+                <span class="badge-soft px-3 py-2 rounded-pill" id="caseOrderType">-</span>
+              </div>
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap">
+              <button id="editOrderBtn" class="btn btn-outline-primary">
+                Edit Order
+              </button>
+
+              <button id="manageAppointmentsBtn" class="btn btn-primary">
+                Manage Appointments
+              </button>
+            </div>
+          </div>
+
+          <hr>
+
+          <div class="row g-3">
+            <div class="col-md-3">
+              <strong>Order ID</strong>
+              <div id="orderIdText"></div>
+            </div>
+
+            <div class="col-md-3">
+              <strong>Occasion</strong>
+              <div id="occasionText"></div>
+            </div>
+
+            <div class="col-md-3">
+              <strong>Customer Type</strong>
+              <div id="customerTypeText"></div>
+            </div>
+
+            <div class="col-md-3">
+              <strong>Venue</strong>
+              <div id="venueText"></div>
+            </div>
+
+            <div class="col-md-3">
+              <strong>Order Date</strong>
+              <div id="orderDateText"></div>
+            </div>
+
+            <div class="col-md-3">
+              <strong>Return Date</strong>
+              <div id="returnDateText"></div>
+            </div>
+
+            <div class="col-md-3">
+              <strong>Phone</strong>
+              <div id="casePhoneText"></div>
+            </div>
+
+            <div class="col-md-3">
+              <strong>Email</strong>
+              <div id="caseEmailText"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+          <div class="card card-luxe h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span>Progress Timeline</span>
+              <button id="manageAppointmentsBtn2" class="btn btn-sm btn-outline-primary">
+                Manage
+              </button>
+            </div>
+
+            <div class="card-body">
+              <div id="progressTimeline"></div>
+            </div>
+          </div>
         </div>
 
-        <div class="card-body">
-          <div class="row g-3">
-            <div class="col-md-4"><strong>Order ID:</strong><div id="orderIdText"></div></div>
-            <div class="col-md-4"><strong>Status:</strong><div id="statusText"></div></div>
-            <div class="col-md-4"><strong>Total Price:</strong><div id="totalText"></div></div>
-            <div class="col-md-4"><strong>Paid:</strong><div id="paidText"></div></div>
-            <div class="col-md-4"><strong>Payment Status:</strong><div id="paymentStatusText"></div></div>
-            <div class="col-md-4"><strong>Remaining:</strong><div id="remainingText"></div></div>
-            <div class="col-md-4"><strong>Order Type:</strong><div id="typeText"></div></div>
-            <div class="col-md-4"><strong>Occasion:</strong><div id="occasionText"></div></div>
-            <div class="col-md-4"><strong>Customer Type:</strong><div id="customerTypeText"></div></div>
-            <div class="col-md-4"><strong>Order Date:</strong><div id="orderDateText"></div></div>
-            <div class="col-md-4"><strong>Return Date:</strong><div id="returnDateText"></div></div>
-            <div class="col-md-4"><strong>Venue:</strong><div id="venueText"></div></div>
+        <div class="col-lg-4">
+          <div class="card card-luxe h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span>Payment Summary</span>
+              <button id="managePaymentsBtn" class="btn btn-sm btn-outline-primary">
+                Manage
+              </button>
+            </div>
+
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-6">
+                  <div class="small-muted">Total</div>
+                  <h4 id="totalText" class="mb-0">0.00</h4>
+                </div>
+
+                <div class="col-6">
+                  <div class="small-muted">Paid</div>
+                  <h4 id="paidText" class="mb-0">0.00</h4>
+                </div>
+
+                <div class="col-6">
+                  <div class="small-muted">Remaining</div>
+                  <h4 id="remainingText" class="mb-0">0.00</h4>
+                </div>
+
+                <div class="col-6">
+                  <div class="small-muted">Status</div>
+                  <div id="paymentStatusText"></div>
+                </div>
+              </div>
+
+              <hr>
+
+              <div id="paymentsMiniList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+          <div class="card card-luxe h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span>Customer</span>
+              <button id="editCustomerBtn" class="btn btn-sm btn-outline-primary">
+                Edit Customer
+              </button>
+            </div>
+
+            <div class="card-body">
+              <div id="customerBox"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-6">
+          <div class="card card-luxe h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span>Dress</span>
+              <button id="editDressBtn" class="btn btn-sm btn-outline-primary">
+                Edit Dress
+              </button>
+            </div>
+
+            <div class="card-body">
+              <div id="dressBox"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+          <div class="card card-luxe h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span>Measurements Summary</span>
+              <button id="manageMeasurementsBtn" class="btn btn-sm btn-outline-primary">
+                Manage
+              </button>
+            </div>
+
+            <div class="card-body">
+              <div id="measurementsSummary"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-6">
+          <div class="card card-luxe h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span>Seamstress Assignment</span>
+              <button id="manageAssignmentsBtn" class="btn btn-sm btn-outline-primary">
+                Manage
+              </button>
+            </div>
+
+            <div class="card-body">
+              <div id="assignmentsSummary"></div>
+            </div>
           </div>
         </div>
       </div>
 
       <div class="card card-luxe mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <span>Customer</span>
-          <button id="editCustomerBtn" class="btn btn-sm btn-outline-primary">
-            Edit Customer
-          </button>
-        </div>
-
-        <div class="card-body">
-          <div id="customerBox"></div>
-        </div>
-      </div>
-
-      <div class="card card-luxe mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <span>Dress</span>
-          <button id="editDressBtn" class="btn btn-sm btn-outline-primary">
-            Edit Dress
-          </button>
-        </div>
-
-        <div class="card-body">
-          <div id="dressBox"></div>
-        </div>
-      </div>
-
-      <div class="card card-luxe mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <span>Payments</span>
-          <button id="managePaymentsBtn" class="btn btn-sm btn-outline-primary">
-            Manage Payments
-          </button>
-        </div>
-
-        <div class="card-body table-responsive">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Amount</th>
-                <th>Method</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="paymentsTbody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="card card-luxe mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <span>Measurements</span>
-          <button id="manageMeasurementsBtn" class="btn btn-sm btn-outline-primary">
-            Manage Measurements
-          </button>
-        </div>
-
-        <div class="card-body table-responsive">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Type</th>
-                <th>Height</th>
-                <th>Weight</th>
-                <th>Bust</th>
-                <th>Waist</th>
-                <th>Hip</th>
-              </tr>
-            </thead>
-            <tbody id="measurementsTbody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="card card-luxe mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <span>Appointments</span>
-          <button id="manageAppointmentsBtn" class="btn btn-sm btn-outline-primary">
+          <span>Appointments History</span>
+          <button id="manageAppointmentsBtn3" class="btn btn-sm btn-outline-primary">
             Manage Appointments
           </button>
         </div>
@@ -154,31 +245,19 @@
                 <th>Status</th>
               </tr>
             </thead>
+
             <tbody id="appointmentsTbody"></tbody>
           </table>
         </div>
       </div>
 
       <div class="card card-luxe mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <span>Seamstress Assignments</span>
-          <button id="manageAssignmentsBtn" class="btn btn-sm btn-outline-primary">
-            Manage Assignments
-          </button>
+        <div class="card-header">
+          Activity Snapshot
         </div>
 
-        <div class="card-body table-responsive">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Seamstress</th>
-                <th>Task</th>
-                <th>Status</th>
-                <th>Due Date</th>
-              </tr>
-            </thead>
-            <tbody id="assignmentsTbody"></tbody>
-          </table>
+        <div class="card-body">
+          <div id="activityBox"></div>
         </div>
       </div>
 
@@ -189,3 +268,5 @@
   <script src="order-details.js"></script>
 </body>
 </html>
+
+

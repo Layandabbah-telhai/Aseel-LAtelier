@@ -9,6 +9,7 @@
   }
 
   const links = [
+    { href: "admin-dashboard.html", label: "Admin Dashboard" },
     { href: "customers.html", label: "Customers" },
     { href: "dresses.html", label: "Dresses" },
     { href: "orders.html", label: "Orders" },
@@ -17,6 +18,8 @@
     { href: "payments.html", label: "Payments" },
     { href: "seamstresses.html", label: "Seamstresses" },
     { href: "occasion-requests.html", label: "Occasion Requests" },
+    { href: "reports.html", label: "Reports" },
+
   ];
 
   let userName = "";
@@ -24,7 +27,7 @@
   try {
     const user = JSON.parse(userRaw || "{}");
     userName = user?.name || "";
-  } catch {}
+  } catch { }
 
   const navHtml = `
     <div class="hero mb-4">
@@ -72,3 +75,5 @@
     });
   });
 })();
+
+

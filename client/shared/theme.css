@@ -525,3 +525,17 @@ body {
     font-size: 20px;
   }
 }
+
+#sharedNav {
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+}
+
+#sharedNav .hero {
+  margin-bottom: 1.5rem;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  background: rgba(255, 255, 255, 0.82);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}

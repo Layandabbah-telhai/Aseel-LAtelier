@@ -33,7 +33,7 @@ async function login() {
     if (user.role === "customer") {
       window.location.href = "./customer/dashboard.html";
     } else {
-      window.location.href = "./admin/customers.html";
+      window.location.href = "./admin/admin-dashboard.html";
     }
   } catch (err) {
     errorBox.textContent = err.message || "Login failed";
@@ -44,3 +44,5 @@ document.getElementById("loginForm")?.addEventListener("submit", (e) => {
   e.preventDefault();
   login();
 });
+
+
