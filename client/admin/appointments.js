@@ -27,14 +27,6 @@ let customers = [];
 let orders = [];
 let appointments = [];
 
-/*
-IMPORTANT:
-Do NOT use:
-new Date(value).toISOString()
-
-because timezone shifts
-the date one day backward.
-*/
 function dateOnly(value) {
   if (!value) return "";
 
@@ -43,6 +35,15 @@ function dateOnly(value) {
   }
 
   return "";
+}
+
+function todayString() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+
+  return `${y}-${m}-${d}`;
 }
 
 function text(value) {
@@ -163,6 +164,10 @@ function renderAppointments() {
           <td>${a.appointment_id}</td>
 
           <td>
+            ${a.order_id ? `#${a.order_id}` : "-"}
+          </td>
+
+          <td>
             ${text(
               a.customer_name ||
               `${a.first_name || ""} ${a.last_name || ""}`.trim()
@@ -170,12 +175,6 @@ function renderAppointments() {
           </td>
 
           <td>${text(a.phone)}</td>
-
-          <td>
-            ${a.order_id
-              ? `#${a.order_id}`
-              : "-"}
-          </td>
 
           <td>${text(a.dress_name)}</td>
 
@@ -204,9 +203,9 @@ function renderAppointments() {
 
           <td>${text(a.notes)}</td>
 
-          <td>
+          <td class="d-flex gap-2 flex-wrap">
             <button
-              class="btn btn-sm btn-outline-primary me-1"
+              class="btn btn-sm btn-outline-secondary"
               onclick="editAppointment(${a.appointment_id})"
             >
               Edit
@@ -229,15 +228,52 @@ function clearForm() {
 
   appointmentForm.reset();
 
-  appointmentDateInput.value =
-    dateOnly(
-      new Date().toISOString()
-    );
+  const today = todayString();
+
+  appointmentDateInput.value = today;
+  appointmentDateInput.min = today;
 
   statusInput.value = "Scheduled";
 
   appointmentTypeInput.value =
     "Consultation";
+}
+
+function validateAppointmentBeforeSave() {
+  const today = todayString();
+
+  if (appointmentDateInput.value < today) {
+    alert("Appointment date cannot be in the past.");
+    return false;
+  }
+
+  const selectedTime =
+    String(appointmentTimeInput.value || "").slice(0, 5);
+
+  if (!selectedTime) {
+    return true;
+  }
+
+  const duplicate = appointments.some((a) => {
+    const sameDate =
+      dateOnly(a.appointment_date) === appointmentDateInput.value;
+
+    const sameTime =
+      String(a.appointment_time || "").slice(0, 5) === selectedTime;
+
+    const differentAppointment =
+      String(a.appointment_id) !==
+      String(appointmentIdInput.value || "");
+
+    return sameDate && sameTime && differentAppointment;
+  });
+
+  if (duplicate) {
+    alert("There is already an appointment at this date and time.");
+    return false;
+  }
+
+  return true;
 }
 
 window.editAppointment = function (id) {
@@ -268,6 +304,9 @@ window.editAppointment = function (id) {
     dateOnly(
       appointment.appointment_date
     );
+
+  appointmentDateInput.min =
+    todayString();
 
   appointmentTimeInput.value =
     appointment.appointment_time
@@ -320,6 +359,10 @@ appointmentForm.addEventListener(
   async (e) => {
 
     e.preventDefault();
+
+    if (!validateAppointmentBeforeSave()) {
+      return;
+    }
 
     const payload = {
       customer_id:
