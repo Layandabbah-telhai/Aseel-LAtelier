@@ -1,5 +1,5 @@
 const API_BASE = window.CONFIG?.API_BASE || "http://localhost:4000/api";
-const FALLBACK_IMAGE = "../images/dark_logo.jpeg";
+const FALLBACK_IMAGE = "../shared/dark_logo.jpeg";
 
 const token = localStorage.getItem("aseel_token");
 const userRaw = localStorage.getItem("aseel_user");

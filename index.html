@@ -142,33 +142,33 @@
   <script src="./client/shared/config.js"></script>
 
   <script>
-  const API_BASE =
-    window.CONFIG?.API_BASE ||
-    "http://localhost:4000/api";
+    const API_BASE =
+      window.CONFIG?.API_BASE ||
+      "http://localhost:4000/api";
 
-  const FALLBACK_IMAGE =
-    "./client/images/dark_logo.jpeg";
+    const FALLBACK_IMAGE =
+      "./client/shared/dark_logo.jpeg";
 
-  const galleryGrid =
-    document.getElementById("galleryGrid");
+    const galleryGrid =
+      document.getElementById("galleryGrid");
 
-  async function loadGallery() {
-    try {
-      const res = await fetch(`${API_BASE}/dresses`);
+    async function loadGallery() {
+      try {
+        const res = await fetch(`${API_BASE}/dresses`);
 
-      if (!res.ok) {
-        throw new Error(`Failed to load gallery (${res.status})`);
-      }
+        if (!res.ok) {
+          throw new Error(`Failed to load gallery (${res.status})`);
+        }
 
-      const dresses = await res.json();
+        const dresses = await res.json();
 
-      const validDresses =
-        Array.isArray(dresses)
-          ? dresses.filter(hasValidImages)
-          : [];
+        const validDresses =
+          Array.isArray(dresses)
+            ? dresses.filter(hasValidImages)
+            : [];
 
-      if (!validDresses.length) {
-        galleryGrid.innerHTML = `
+        if (!validDresses.length) {
+          galleryGrid.innerHTML = `
           <div class="col-12">
             <div class="card card-luxe">
               <div class="card-body text-center small-muted">
@@ -177,14 +177,14 @@
             </div>
           </div>
         `;
-        return;
-      }
+          return;
+        }
 
-      galleryGrid.innerHTML =
-        validDresses.map(renderGalleryCard).join("");
+        galleryGrid.innerHTML =
+          validDresses.map(renderGalleryCard).join("");
 
-    } catch (error) {
-      galleryGrid.innerHTML = `
+      } catch (error) {
+        galleryGrid.innerHTML = `
         <div class="col-12">
           <div class="card card-luxe">
             <div class="card-body text-center text-danger">
@@ -193,47 +193,47 @@
           </div>
         </div>
       `;
+      }
     }
-  }
 
-  function hasValidImages(dress) {
-    const images =
-      Array.isArray(dress.images) && dress.images.length
-        ? dress.images.map(img => img.image_url).filter(Boolean)
-        : dress.image_url
-          ? [dress.image_url]
-          : [];
+    function hasValidImages(dress) {
+      const images =
+        Array.isArray(dress.images) && dress.images.length
+          ? dress.images.map(img => img.image_url).filter(Boolean)
+          : dress.image_url
+            ? [dress.image_url]
+            : [];
 
-    return images.some(isValidImage);
-  }
+      return images.some(isValidImage);
+    }
 
-  function isValidImage(path) {
-    const lower = String(path || "").toLowerCase();
+    function isValidImage(path) {
+      const lower = String(path || "").toLowerCase();
 
-    return (
-      lower &&
-      !lower.includes(".pdf") &&
-      !lower.includes(".doc") &&
-      !lower.includes(".docx") &&
-      !lower.includes(".txt")
-    );
-  }
+      return (
+        lower &&
+        !lower.includes(".pdf") &&
+        !lower.includes(".doc") &&
+        !lower.includes(".docx") &&
+        !lower.includes(".txt")
+      );
+    }
 
-  function renderGalleryCard(dress) {
-    const images =
-      Array.isArray(dress.images) && dress.images.length
-        ? dress.images.map(img => img.image_url).filter(isValidImage)
-        : dress.image_url && isValidImage(dress.image_url)
-          ? [dress.image_url]
-          : [FALLBACK_IMAGE];
+    function renderGalleryCard(dress) {
+      const images =
+        Array.isArray(dress.images) && dress.images.length
+          ? dress.images.map(img => img.image_url).filter(isValidImage)
+          : dress.image_url && isValidImage(dress.image_url)
+            ? [dress.image_url]
+            : [FALLBACK_IMAGE];
 
-    const escapedImages =
-      images.map(img => escapeHtml(img));
+      const escapedImages =
+        images.map(img => escapeHtml(img));
 
-    const imagesJson =
-      escapeHtml(JSON.stringify(escapedImages));
+      const imagesJson =
+        escapeHtml(JSON.stringify(escapedImages));
 
-    return `
+      return `
       <div class="col-md-6 col-lg-4">
         <div class="card card-luxe gallery-card h-100 overflow-hidden">
           <div
@@ -248,9 +248,8 @@
               onerror="this.src='${FALLBACK_IMAGE}'"
             >
 
-            ${
-              escapedImages.length > 1
-                ? `
+            ${escapedImages.length > 1
+          ? `
                   <button
                     type="button"
                     class="slider-arrow slider-arrow-left"
@@ -273,8 +272,8 @@
                     `).join("")}
                   </div>
                 `
-                : ""
-            }
+          : ""
+        }
           </div>
 
           <div class="card-body text-center">
@@ -284,51 +283,51 @@
 
             <p class="gallery-description mb-0">
               ${escapeHtml(
-                dress.notes ||
-                "A selected bridal piece from Aseel L'Atelier."
-              )}
+          dress.notes ||
+          "A selected bridal piece from Aseel L'Atelier."
+        )}
             </p>
           </div>
         </div>
       </div>
     `;
-  }
+    }
 
-  window.changeSlide = function (button, direction) {
-    const slider = button.closest(".gallery-slider");
-    if (!slider) return;
+    window.changeSlide = function (button, direction) {
+      const slider = button.closest(".gallery-slider");
+      if (!slider) return;
 
-    const imageEl = slider.querySelector(".slider-main-image");
-    const dots = slider.querySelectorAll(".slider-dot");
-    const images = JSON.parse(slider.dataset.images || "[]");
+      const imageEl = slider.querySelector(".slider-main-image");
+      const dots = slider.querySelectorAll(".slider-dot");
+      const images = JSON.parse(slider.dataset.images || "[]");
 
-    if (!images.length) return;
+      if (!images.length) return;
 
-    let index = Number(slider.dataset.index || 0);
-    index += direction;
+      let index = Number(slider.dataset.index || 0);
+      index += direction;
 
-    if (index < 0) index = images.length - 1;
-    if (index >= images.length) index = 0;
+      if (index < 0) index = images.length - 1;
+      if (index >= images.length) index = 0;
 
-    slider.dataset.index = index;
-    imageEl.src = images[index] || FALLBACK_IMAGE;
+      slider.dataset.index = index;
+      imageEl.src = images[index] || FALLBACK_IMAGE;
 
-    dots.forEach((dot, i) => {
-      dot.classList.toggle("active", i === index);
-    });
-  };
+      dots.forEach((dot, i) => {
+        dot.classList.toggle("active", i === index);
+      });
+    };
 
-  function escapeHtml(value) {
-    return String(value ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
 
-  loadGallery();
-</script>
+    loadGallery();
+  </script>
 
 </body>
 
