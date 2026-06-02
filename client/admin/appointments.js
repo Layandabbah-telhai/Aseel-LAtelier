@@ -29,6 +29,8 @@ const appointmentsTbody = document.getElementById("appointmentsTbody");
 const appointmentsCount = document.getElementById("appointmentsCount");
 const agendaWrap = document.getElementById("agendaWrap");
 const orderSummary = document.getElementById("orderSummary");
+const appointmentFormCard = document.getElementById("appointmentFormCard");
+const newAppointmentBtn = document.getElementById("newAppointmentBtn");
 
 let customers = [];
 let orders = [];
@@ -58,6 +60,18 @@ const GENERAL_APPOINTMENTS = [
   "Delivery",
   "Custom",
 ];
+
+function showAppointmentForm() {
+  if (appointmentFormCard) {
+    appointmentFormCard.style.display = "";
+  }
+}
+
+function hideAppointmentForm() {
+  if (appointmentFormCard) {
+    appointmentFormCard.style.display = "none";
+  }
+}
 
 function populateAppointmentTypes(orderType = "") {
   const type = String(orderType || "").trim().toLowerCase();
@@ -505,6 +519,8 @@ function validateAppointmentBeforeSave() {
 }
 
 window.editAppointment = function (id) {
+  showAppointmentForm();
+
   const appointment = appointments.find(
     (a) => Number(a.appointment_id) === Number(id)
   );
@@ -640,6 +656,10 @@ appointmentForm.addEventListener("submit", async (e) => {
 
     clearForm();
 
+    if (!new URLSearchParams(window.location.search).get("order_id")) {
+      hideAppointmentForm();
+    }
+
     await loadAppointments();
   } catch (err) {
     alert(err.message);
@@ -660,7 +680,18 @@ resetBtn.addEventListener("click", () => {
   loadAppointments();
 });
 
-cancelEditBtn.addEventListener("click", clearForm);
+cancelEditBtn.addEventListener("click", () => {
+  clearForm();
+
+  if (!new URLSearchParams(window.location.search).get("order_id")) {
+    hideAppointmentForm();
+  }
+});
+
+newAppointmentBtn?.addEventListener("click", () => {
+  clearForm();
+  showAppointmentForm();
+});
 
 orderSelect.addEventListener("change", syncAppointmentTypesWithOrder);
 
@@ -709,6 +740,7 @@ allBtn.addEventListener("click", () => {
     ]);
 
     clearForm();
+    hideAppointmentForm();
 
     const params = new URLSearchParams(window.location.search);
     const orderId = params.get("order_id");
@@ -718,6 +750,8 @@ allBtn.addEventListener("click", () => {
       syncAppointmentTypesWithOrder();
 
       const selectedOrder = getSelectedOrder();
+
+      showAppointmentForm();
 
       if (selectedOrder && orderSummary) {
         const customerName =

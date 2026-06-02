@@ -8,6 +8,8 @@ const apiText = document.getElementById("apiUrlText");
 const orderSummary = document.getElementById("orderSummary");
 const form = document.getElementById("paymentForm");
 const cancelEditBtn = document.getElementById("cancelEditBtn");
+const paymentFormCard = document.getElementById("paymentFormCard");
+const newPaymentBtn = document.getElementById("newPaymentBtn");
 
 const paymentId = document.getElementById("payment_id");
 const orderId = document.getElementById("order_id");
@@ -20,6 +22,18 @@ const paymentsCount = document.getElementById("paymentsCount");
 
 let ordersCache = [];
 let paymentsCache = [];
+
+function showPaymentForm() {
+  if (paymentFormCard) {
+    paymentFormCard.style.display = "";
+  }
+}
+
+function hidePaymentForm() {
+  if (paymentFormCard) {
+    paymentFormCard.style.display = "none";
+  }
+}
 
 if (apiText) {
   apiText.textContent = urlOrderId
@@ -104,6 +118,7 @@ async function loadOrders() {
 
   if (urlOrderId) {
     orderId.value = urlOrderId;
+    orderId.disabled = true;
   }
 
   renderOrderSummary();
@@ -212,6 +227,8 @@ function renderPayments(rows) {
 }
 
 window.editPayment = function (id) {
+  showPaymentForm();
+
   const p = paymentsCache.find(
     (row) => String(row.payment_id) === String(id)
   );
@@ -240,6 +257,11 @@ window.deletePayment = async function (id) {
     });
 
     clearForm();
+
+    if (!urlOrderId) {
+      hidePaymentForm();
+    }
+
     await loadOrders();
     await loadPayments();
   } catch (err) {
@@ -301,14 +323,36 @@ function clearForm() {
   paymentId.value = "";
   form.reset();
   orderId.value = urlOrderId || "";
+
+  if (urlOrderId) {
+    orderId.disabled = true;
+  }
 }
 
-cancelEditBtn?.addEventListener("click", clearForm);
+cancelEditBtn?.addEventListener("click", () => {
+  clearForm();
+
+  if (!urlOrderId) {
+    hidePaymentForm();
+  }
+});
+
+newPaymentBtn?.addEventListener("click", () => {
+  clearForm();
+  showPaymentForm();
+});
 
 (async function initPaymentsPage() {
   try {
     await loadOrders();
     clearForm();
+
+    if (urlOrderId) {
+      showPaymentForm();
+    } else {
+      hidePaymentForm();
+    }
+
     await loadPayments();
   } catch (err) {
     orderSummary.innerHTML = `

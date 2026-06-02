@@ -24,6 +24,44 @@ const notes = document.getElementById("notes");
 const imageFile = document.getElementById("image_file");
 const imagePreviewGallery = document.getElementById("image_preview_gallery");
 
+const dressFormPanel = document.getElementById("dressFormPanel");
+const toggleDressFormBtn = document.getElementById("toggleDressFormBtn");
+
+
+function showDressForm() {
+  if (dressFormPanel) {
+    dressFormPanel.style.display = "";
+  }
+
+  if (toggleDressFormBtn) {
+    toggleDressFormBtn.textContent = "Hide Form";
+  }
+}
+
+function hideDressForm() {
+  if (dressFormPanel) {
+    dressFormPanel.style.display = "none";
+  }
+
+  if (toggleDressFormBtn) {
+    toggleDressFormBtn.textContent = "+ Add Dress";
+  }
+}
+
+function toggleDressForm() {
+  if (!dressFormPanel) return;
+
+  const isHidden =
+    dressFormPanel.style.display === "none";
+
+  if (isHidden) {
+    clearForm();
+    showDressForm();
+  } else {
+    hideDressForm();
+  }
+}
+
 const apiText = document.getElementById("apiUrlText");
 if (apiText) apiText.textContent = ENDPOINT;
 
@@ -297,6 +335,7 @@ form?.addEventListener("submit", async (e) => {
     }
 
     clearForm();
+    hideDressForm();
     setMessage("Dress saved successfully.");
     loadDresses(searchInput.value.trim());
   } catch (error) {
@@ -305,6 +344,8 @@ form?.addEventListener("submit", async (e) => {
 });
 
 window.editDress = async function (id) {
+  showDressForm();
+
   try {
     const res = await fetch(`${ENDPOINT}/${id}`);
     const d = await res.json().catch(() => null);
@@ -380,9 +421,16 @@ resetBtn?.addEventListener("click", () => {
   loadDresses();
 });
 
-cancelEditBtn?.addEventListener("click", clearForm);
+cancelEditBtn?.addEventListener("click", () => {
+  clearForm();
+  hideDressForm();
+});
+
+toggleDressFormBtn?.addEventListener("click", toggleDressForm);
 
 renderPreviewGallery([]);
+hideDressForm();
+
 (async function () {
 
   await loadDresses();

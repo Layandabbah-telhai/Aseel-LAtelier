@@ -37,7 +37,6 @@ const activityBox = document.getElementById("activityBox");
 
 const editOrderBtn = document.getElementById("editOrderBtn");
 const editCustomerBtn = document.getElementById("editCustomerBtn");
-const editDressBtn = document.getElementById("editDressBtn");
 const managePaymentsBtn = document.getElementById("managePaymentsBtn");
 const manageMeasurementsBtn = document.getElementById("manageMeasurementsBtn");
 const manageAssignmentsBtn = document.getElementById("manageAssignmentsBtn");
@@ -469,10 +468,6 @@ function setupNavigationButtons() {
 
   editCustomerBtn.onclick = () => {
     window.location.href = `customers.html?edit_customer_id=${currentOrder.customer_id}`;
-  };
-
-  editDressBtn.onclick = () => {
-    window.location.href = `dresses.html?edit_dress_id=${currentOrder.dress_id}`;
   };
 
   managePaymentsBtn.onclick = () => {

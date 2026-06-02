@@ -32,9 +32,45 @@ const cancelSeamstressEditBtn =
 const cancelAssignmentEditBtn =
   document.getElementById("cancelAssignmentEditBtn");
 
+const seamstressFormCard =
+  document.getElementById("seamstressFormCard");
+
+const assignmentFormCard =
+  document.getElementById("assignmentFormCard");
+
+const newSeamstressBtn =
+  document.getElementById("newSeamstressBtn");
+
+const newAssignmentBtn =
+  document.getElementById("newAssignmentBtn");
+
 let seamstressesCache = [];
 let assignmentsCache = [];
 let ordersCache = [];
+
+function showSeamstressForm() {
+  if (seamstressFormCard) {
+    seamstressFormCard.style.display = "";
+  }
+}
+
+function hideSeamstressForm() {
+  if (seamstressFormCard) {
+    seamstressFormCard.style.display = "none";
+  }
+}
+
+function showAssignmentForm() {
+  if (assignmentFormCard) {
+    assignmentFormCard.style.display = "";
+  }
+}
+
+function hideAssignmentForm() {
+  if (assignmentFormCard) {
+    assignmentFormCard.style.display = "none";
+  }
+}
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -273,6 +309,8 @@ function renderAssignments(rows) {
 }
 
 window.editSeamstress = function (id) {
+  showSeamstressForm();
+
   const s = seamstressesCache.find(
     (x) => String(x.seamstress_id) === String(id)
   );
@@ -302,6 +340,8 @@ window.deleteSeamstress = async function (id) {
 };
 
 window.editAssignment = function (id) {
+  showAssignmentForm();
+
   const a = assignmentsCache.find(
     (x) => String(x.assignment_id) === String(id)
   );
@@ -361,6 +401,7 @@ seamstressForm?.addEventListener("submit", async (e) => {
     });
 
     clearSeamstressForm();
+    hideSeamstressForm();
 
     await loadSeamstresses();
   } catch (err) {
@@ -410,6 +451,10 @@ assignmentForm?.addEventListener("submit", async (e) => {
 
     clearAssignmentForm();
 
+    if (!urlOrderId) {
+      hideAssignmentForm();
+    }
+
     await loadAssignments();
   } catch (err) {
     alert(err.message || "Save failed");
@@ -426,13 +471,38 @@ function clearAssignmentForm() {
   assignmentForm.reset();
 
   orderIdField.value = urlOrderId || "";
+
+  if (urlOrderId) {
+    orderIdField.disabled = true;
+  }
+
   seamstressSelect.value = "";
   assignmentStatus.value = "Pending";
   dueDate.value = "";
 }
 
-cancelSeamstressEditBtn?.addEventListener("click", clearSeamstressForm);
-cancelAssignmentEditBtn?.addEventListener("click", clearAssignmentForm);
+cancelSeamstressEditBtn?.addEventListener("click", () => {
+  clearSeamstressForm();
+  hideSeamstressForm();
+});
+
+cancelAssignmentEditBtn?.addEventListener("click", () => {
+  clearAssignmentForm();
+
+  if (!urlOrderId) {
+    hideAssignmentForm();
+  }
+});
+
+newSeamstressBtn?.addEventListener("click", () => {
+  clearSeamstressForm();
+  showSeamstressForm();
+});
+
+newAssignmentBtn?.addEventListener("click", () => {
+  clearAssignmentForm();
+  showAssignmentForm();
+});
 
 (async function initSeamstressesPage() {
 
@@ -444,20 +514,20 @@ cancelAssignmentEditBtn?.addEventListener("click", clearAssignmentForm);
 
     clearAssignmentForm();
 
+    if (!urlOrderId) {
+      hideAssignmentForm();
+    }
+
     await loadAssignments();
 
-    const params =
-      new URLSearchParams(window.location.search);
+    hideSeamstressForm();
 
-    const orderId =
-      params.get("order_id");
-
-    if (orderId && orderSelect) {
-
-      orderSelect.value =
-        orderId;
-
-      loadAssignments();
+    if (urlOrderId) {
+      orderIdField.value = urlOrderId;
+      orderIdField.disabled = true;
+      showAssignmentForm();
+    } else {
+      hideAssignmentForm();
     }
 
   } catch (err) {

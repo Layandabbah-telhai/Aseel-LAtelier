@@ -76,6 +76,47 @@ const apiUrlText =
 const returnDateWrap =
   document.getElementById("returnDateWrap");
 
+const orderFormPanel =
+  document.getElementById("orderFormPanel");
+
+const toggleOrderFormBtn =
+  document.getElementById("toggleOrderFormBtn");
+
+
+function showOrderForm() {
+  if (orderFormPanel) {
+    orderFormPanel.style.display = "";
+  }
+
+  if (toggleOrderFormBtn) {
+    toggleOrderFormBtn.textContent = "Hide Form";
+  }
+}
+
+function hideOrderForm() {
+  if (orderFormPanel) {
+    orderFormPanel.style.display = "none";
+  }
+
+  if (toggleOrderFormBtn) {
+    toggleOrderFormBtn.textContent = "+ New Order";
+  }
+}
+
+function toggleOrderForm() {
+  if (!orderFormPanel) return;
+
+  const isHidden =
+    orderFormPanel.style.display === "none";
+
+  if (isHidden) {
+    clearOrderForm();
+    showOrderForm();
+  } else {
+    hideOrderForm();
+  }
+}
+
 let customers = [];
 let dresses = [];
 let orders = [];
@@ -401,6 +442,8 @@ function clearOrderForm() {
 window.editOrder =
   function (id) {
 
+    showOrderForm();
+
     const order =
       orders.find(
         (o) =>
@@ -599,6 +642,7 @@ orderForm?.addEventListener(
       });
 
       clearOrderForm();
+      hideOrderForm();
 
       await loadOrders();
 
@@ -628,7 +672,15 @@ resetBtn?.addEventListener(
 
 cancelEditBtn?.addEventListener(
   "click",
-  clearOrderForm
+  () => {
+    clearOrderForm();
+    hideOrderForm();
+  }
+);
+
+toggleOrderFormBtn?.addEventListener(
+  "click",
+  toggleOrderForm
 );
 
 orderTypeInput?.addEventListener(
@@ -670,6 +722,7 @@ totalPriceInput?.addEventListener(
     ]);
 
     clearOrderForm();
+    hideOrderForm();
 
     await loadOrders();
 

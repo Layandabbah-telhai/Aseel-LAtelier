@@ -46,7 +46,17 @@
 
     </div>
 
-    <div class="card card-luxe mb-4">
+    <div class="d-flex justify-content-end gap-2 mb-3 flex-wrap">
+      <button id="newSeamstressBtn" type="button" class="btn btn-outline-primary">
+        + New Seamstress
+      </button>
+
+      <button id="newAssignmentBtn" type="button" class="btn btn-primary">
+        + New Assignment
+      </button>
+    </div>
+
+    <div id="seamstressFormCard" class="card card-luxe mb-4" style="display:none;">
 
       <div class="card-header">
         Seamstress
@@ -112,7 +122,7 @@
       </div>
     </div>
 
-    <div class="card card-luxe mb-4">
+    <div id="assignmentFormCard" class="card card-luxe mb-4" style="display:none;">
 
       <div class="card-header">
         Assignment

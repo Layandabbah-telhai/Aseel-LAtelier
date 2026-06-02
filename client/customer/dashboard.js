@@ -1,5 +1,5 @@
 const API_BASE = window.CONFIG?.API_BASE || "http://localhost:4000/api";
-const FALLBACK_IMAGE = "../logo.png";
+const FALLBACK_IMAGE = "../images/dark_logo.jpeg";
 
 const token = localStorage.getItem("aseel_token");
 const userRaw = localStorage.getItem("aseel_user");
@@ -11,7 +11,7 @@ if (!token || !userRaw) {
 const user = JSON.parse(userRaw || "{}");
 
 if (user.role !== "customer") {
-  window.location.href = "../admin/customers.html";
+  window.location.href = "../admin/admin-dashboard.html";
 }
 
 if (!user.customer_id) {
@@ -64,8 +64,40 @@ function normalizeStatus(status) {
 }
 
 function statusBadge(status) {
+  const normalized = normalizeStatus(status);
+
+  let cls = "badge-soft";
+
+  if (
+    normalized === "paid" ||
+    normalized === "completed" ||
+    normalized === "accepted" ||
+    normalized === "ready" ||
+    normalized === "delivered"
+  ) {
+    cls = "text-bg-success";
+  }
+
+  if (
+    normalized === "partial" ||
+    normalized === "pending" ||
+    normalized === "missed" ||
+    normalized === "in_progress" ||
+    normalized === "sewing"
+  ) {
+    cls = "text-bg-warning";
+  }
+
+  if (
+    normalized === "unpaid" ||
+    normalized === "cancelled" ||
+    normalized === "rejected"
+  ) {
+    cls = "text-bg-danger";
+  }
+
   return `
-    <span class="badge-soft px-3 py-2 rounded-pill">
+    <span class="${cls} px-3 py-2 rounded-pill">
       ${escapeHtml(prettifyStatus(status))}
     </span>
   `;
@@ -117,42 +149,82 @@ function renderProgressTimeline(status) {
 
   if (normalizeStatus(status) === "cancelled") {
     return `
-      <div class="mb-4">
-        <h5>Dress Progress</h5>
-        <div class="alert alert-danger rounded-4 mb-0">
-          This order was cancelled.
-        </div>
+      <div class="alert alert-danger rounded-4 mb-0">
+        This order was cancelled.
       </div>
     `;
   }
 
   return `
-    <div class="mb-4">
-      <h5>Dress Progress</h5>
-      <div class="d-flex flex-wrap gap-2">
-        ${steps
+    <div class="d-flex flex-wrap gap-2">
+      ${steps
       .map((step, index) => {
         const done = index <= current;
         const active = index === current;
 
         return `
-              <div
-                class="px-3 py-2 rounded-pill border"
-                style="
-                  background:${done ? "#f1e7e2" : "#fff"};
-                  border-color:${active ? "#b99d91" : "#eadfd9"} !important;
-                  font-weight:${active ? "700" : "500"};
-                  color:${done ? "#5e4a45" : "#a99892"};
-                "
-              >
-                ${done ? "✓" : "○"} ${escapeHtml(step)}
-              </div>
-            `;
+            <div
+              class="px-3 py-2 rounded-pill border"
+              style="
+                background:${done ? "#f1e7e2" : "#fff"};
+                border-color:${active ? "#b99d91" : "#eadfd9"} !important;
+                font-weight:${active ? "700" : "500"};
+                color:${done ? "#5e4a45" : "#a99892"};
+              "
+            >
+              ${done ? "✓" : "○"} ${escapeHtml(step)}
+            </div>
+          `;
       })
       .join("")}
-      </div>
     </div>
   `;
+}
+
+function getNextAppointment(orders) {
+  const allAppointments =
+    orders.flatMap((order) =>
+      (order.appointments || []).map((appointment) => ({
+        ...appointment,
+        _order_id: order.order_id,
+      }))
+    );
+
+  const now = new Date();
+
+  return allAppointments
+    .filter((appointment) => {
+      const status = normalizeStatus(appointment.status);
+
+      if (
+        status === "completed" ||
+        status === "cancelled" ||
+        status === "missed"
+      ) {
+        return false;
+      }
+
+      const date = formatDate(appointment.appointment_date);
+
+      if (date === "-") return false;
+
+      const time =
+        formatTime(appointment.appointment_time) === "-"
+          ? "23:59"
+          : formatTime(appointment.appointment_time);
+
+      return new Date(`${date}T${time}`) >= now;
+    })
+    .sort((a, b) => {
+      const aKey = `${formatDate(a.appointment_date)} ${formatTime(
+        a.appointment_time
+      )}`;
+      const bKey = `${formatDate(b.appointment_date)} ${formatTime(
+        b.appointment_time
+      )}`;
+
+      return aKey.localeCompare(bKey);
+    })[0] || null;
 }
 
 async function fetchJson(url, options = {}) {
@@ -192,48 +264,204 @@ function renderDashboard(data, occasionRequests = []) {
   const customer = data.customer;
   const orders = Array.isArray(data.orders) ? data.orders : [];
 
+  const pendingRequests = occasionRequests.filter(
+    (request) => normalizeStatus(request.status) === "pending"
+  );
+
+  const nextAppointment = getNextAppointment(orders);
+
+  const activeOrders = orders.filter(
+    (order) =>
+      !["completed", "cancelled"].includes(normalizeStatus(order.status))
+  );
+
+  const totalRemaining =
+    orders.reduce((sum, order) => {
+      const total = Number(order.total_price || 0);
+      const paid = Number(order.paid_amount || 0);
+
+      return sum + Math.max(total - paid, 0);
+    }, 0);
+
   dashboardContent.innerHTML = `
-    <div class="card card-luxe mb-4">
-      <div class="card-body">
-        <h4 class="mb-2">
-          Welcome,
-          ${escapeHtml(customer.first_name)}
-          ${escapeHtml(customer.last_name)}
-        </h4>
+    ${renderCustomerHeader(customer)}
 
-        <div class="small-muted">
-          ${escapeHtml(customer.email || "")}
-          ${customer.phone ? ` | ${escapeHtml(customer.phone)}` : ""}
-          ${customer.city ? ` | ${escapeHtml(customer.city)}` : ""}
-        </div>
-      </div>
-    </div>
+    ${renderSummaryCards({
+    orders,
+    activeOrders,
+    pendingRequests,
+    nextAppointment,
+    totalRemaining,
+  })}
 
-    ${renderNewOccasionRequest()}
+    ${renderRequestPanel()}
 
     ${renderMyOccasionRequests(occasionRequests)}
 
     ${orders.length
-      ? orders.map(renderOrderCard).join("")
+      ? `
+        <div class="mb-3">
+          <h3 class="mb-1">My Orders</h3>
+          <p class="small-muted mb-0">
+            Follow your dress process, payments, and appointments.
+          </p>
+        </div>
+
+        ${orders.map(renderOrderCard).join("")}
+      `
       : `
-          <div class="card card-luxe">
-            <div class="card-body text-center small-muted">
-              You do not have any orders yet.
-            </div>
+        <div class="card card-luxe">
+          <div class="card-body text-center small-muted">
+            You do not have any orders yet.
           </div>
-        `
+        </div>
+      `
     }
   `;
 
   bindOccasionExperienceToggle();
 }
 
-function renderNewOccasionRequest() {
+function renderCustomerHeader(customer) {
   return `
     <div class="card card-luxe mb-4">
       <div class="card-body">
-        <h3 class="mb-4">Request New Occasion</h3>
+        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+          <div>
+            <div class="small-muted mb-1">
+              Welcome back
+            </div>
 
+            <h2 class="mb-2">
+              ${escapeHtml(customer.first_name || "")}
+              ${escapeHtml(customer.last_name || "")}
+            </h2>
+
+            <div class="small-muted">
+              ${escapeHtml(customer.email || "-")}
+              ${customer.phone ? ` · ${escapeHtml(customer.phone)}` : ""}
+              ${customer.city ? ` · ${escapeHtml(customer.city)}` : ""}
+            </div>
+          </div>
+
+          <button
+            class="btn btn-primary"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#occasionRequestCollapse"
+          >
+            + New Occasion Request
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderSummaryCards({
+  orders,
+  activeOrders,
+  pendingRequests,
+  nextAppointment,
+  totalRemaining,
+}) {
+  return `
+    <div class="row g-4 mb-4">
+      <div class="col-md-3">
+        <div class="card card-luxe h-100">
+          <div class="card-body">
+            <div class="small-muted">Orders</div>
+            <h2 class="mb-0">${orders.length}</h2>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="card card-luxe h-100">
+          <div class="card-body">
+            <div class="small-muted">Active Orders</div>
+            <h2 class="mb-0">${activeOrders.length}</h2>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="card card-luxe h-100">
+          <div class="card-body">
+            <div class="small-muted">Pending Requests</div>
+            <h2 class="mb-0">${pendingRequests.length}</h2>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="card card-luxe h-100">
+          <div class="card-body">
+            <div class="small-muted">Remaining Balance</div>
+            <h2 class="mb-0">${formatMoney(totalRemaining)}</h2>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card card-luxe mb-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+          <div>
+            <div class="small-muted mb-1">
+              Next Appointment
+            </div>
+
+            ${nextAppointment
+      ? `
+                  <h4 class="mb-1">
+                    ${escapeHtml(formatDate(nextAppointment.appointment_date))}
+                    ·
+                    ${escapeHtml(formatTime(nextAppointment.appointment_time))}
+                  </h4>
+
+                  <div class="small-muted">
+                    ${escapeHtml(
+        nextAppointment.appointment_type ||
+        nextAppointment.type ||
+        "-"
+      )}
+                    · Order #${escapeHtml(nextAppointment._order_id)}
+                  </div>
+                `
+      : `
+                  <h4 class="mb-1">No upcoming appointment</h4>
+
+                  <div class="small-muted">
+                    The designer will schedule appointments once needed.
+                  </div>
+                `
+    }
+          </div>
+
+          ${nextAppointment ? statusBadge(nextAppointment.status) : ""}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderRequestPanel() {
+  return `
+    <div class="collapse mb-4" id="occasionRequestCollapse">
+      ${renderNewOccasionRequest()}
+    </div>
+  `;
+}
+
+function renderNewOccasionRequest() {
+  return `
+    <div class="card card-luxe">
+      <div class="card-header">
+        Request New Occasion
+      </div>
+
+      <div class="card-body">
         <div class="row g-3">
 
           <div class="col-md-4">
@@ -330,12 +558,22 @@ function renderNewOccasionRequest() {
             rows="3"
             placeholder="Write notes..."
             id="occasion_notes"
+            style="height:auto !important;"
           ></textarea>
         </div>
 
-        <div class="mt-3">
-          <button class="btn btn-dark" onclick="submitOccasionRequest()">
+        <div class="mt-3 d-flex gap-2 flex-wrap">
+          <button class="btn btn-primary" onclick="submitOccasionRequest()">
             Submit Occasion Request
+          </button>
+
+          <button
+            class="btn btn-outline-secondary"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#occasionRequestCollapse"
+          >
+            Cancel
           </button>
         </div>
       </div>
@@ -386,9 +624,11 @@ function renderMyOccasionRequests(requests) {
   if (!Array.isArray(requests) || !requests.length) {
     return `
       <div class="card card-luxe mb-4">
-        <div class="card-body">
-          <h4 class="mb-2">My Occasion Requests</h4>
+        <div class="card-header">
+          My Occasion Requests
+        </div>
 
+        <div class="card-body">
           <div class="small-muted">
             No occasion requests yet.
           </div>
@@ -399,56 +639,53 @@ function renderMyOccasionRequests(requests) {
 
   return `
     <div class="card card-luxe mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>My Occasion Requests</span>
+        <span class="badge-soft px-3 py-2 rounded-pill">
+          ${requests.length}
+        </span>
+      </div>
+
       <div class="card-body">
-        <h4 class="mb-3">My Occasion Requests</h4>
-
-        <div class="table-responsive">
-          <table class="table table-sm align-middle">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Occasion</th>
-                <th>Event Date</th>
-                <th>Order Type</th>
-                <th>Venue</th>
-                <th>Customer Type</th>
-                <th>Status</th>
-                <th>Admin Notes</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              ${requests
+        <div class="row g-3">
+          ${requests
+      .slice(0, 6)
       .map(
         (r) => `
-                <tr>
-                  <td>${escapeHtml(r.request_id)}</td>
+                <div class="col-md-6 col-xl-4">
+                  <div class="border rounded-4 p-3 h-100">
+                    <div class="d-flex justify-content-between gap-2 mb-2">
+                      <strong>${escapeHtml(r.occasion_type || "-")}</strong>
+                      ${statusBadge(r.status)}
+                    </div>
 
-                  <td>${escapeHtml(r.occasion_type || "-")}</td>
+                    <div class="small-muted">
+                      Date: ${escapeHtml(formatDate(r.event_date))}
+                    </div>
 
-                  <td>${escapeHtml(formatDate(r.event_date))}</td>
+                    <div class="small-muted">
+                      Type: ${escapeHtml(prettifyStatus(r.order_type || "-"))}
+                    </div>
 
-                  <td>${escapeHtml(prettifyStatus(r.order_type || "-"))}</td>
+                    <div class="small-muted">
+                      Venue:
+                      ${escapeHtml(r.venue_city || "-")}
+                      ${r.venue_hall ? `· ${escapeHtml(r.venue_hall)}` : ""}
+                    </div>
 
-                  <td>
-                    ${escapeHtml(r.venue_city || "-")}
-                    ${r.venue_hall
-            ? `<div class="small-muted">${escapeHtml(r.venue_hall)}</div>`
+                    ${r.admin_notes
+            ? `
+                          <div class="small-muted mt-2">
+                            Admin notes: ${escapeHtml(r.admin_notes)}
+                          </div>
+                        `
             : ""
           }
-                  </td>
-
-                  <td>${escapeHtml(r.customer_type || "-")}</td>
-
-                  <td>${statusBadge(r.status)}</td>
-
-                  <td>${escapeHtml(r.admin_notes || "-")}</td>
-                </tr>
+                  </div>
+                </div>
               `
       )
       .join("")}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>
@@ -458,19 +695,33 @@ function renderMyOccasionRequests(requests) {
 function renderOrderCard(order) {
   const dressDisplayName = getDressDisplayName(order);
 
+  const imageSrc =
+    order.image_url &&
+      order.dress_name &&
+      order.dress_name !== "Not assigned yet"
+      ? order.image_url
+      : FALLBACK_IMAGE;
+
+  const remaining =
+    Math.max(
+      Number(order.total_price || 0) -
+      Number(order.paid_amount || 0),
+      0
+    );
+
   return `
     <div class="card card-luxe mb-4 overflow-hidden">
       <div class="card-body">
         <div class="row g-4">
 
-          <div class="col-md-4">
+          <div class="col-lg-4">
             <img
-              src="${escapeHtml(order.image_url || FALLBACK_IMAGE)}"
+              src="${escapeHtml(imageSrc)}"
               alt="${escapeHtml(dressDisplayName)}"
               class="img-fluid rounded-4"
               style="
                 width:100%;
-                height:420px;
+                height:360px;
                 object-fit:contain;
                 background:#f8f5f3;
                 padding:12px;
@@ -479,7 +730,7 @@ function renderOrderCard(order) {
             >
           </div>
 
-          <div class="col-md-8">
+          <div class="col-lg-8">
 
             <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
               <div>
@@ -491,8 +742,12 @@ function renderOrderCard(order) {
 
                 <div class="small-muted">
                   ${escapeHtml(order.occasion_type || "-")}
-                  |
-                  ${escapeHtml(order.order_type || "-")}
+                  ·
+                  ${escapeHtml(
+    order.order_type === "sale"
+      ? "Custom Design"
+      : prettifyStatus(order.order_type || "-")
+  )}
                 </div>
               </div>
 
@@ -501,12 +756,15 @@ function renderOrderCard(order) {
               </div>
             </div>
 
-            ${renderProgressTimeline(order.status)}
+            <div class="mb-4">
+              <h5>Dress Progress</h5>
+              ${renderProgressTimeline(order.status)}
+            </div>
 
             <div class="row g-3 mb-4">
 
-              <div class="col-md-4">
-                <div class="card border-0 bg-light rounded-4">
+              <div class="col-md-3">
+                <div class="card border-0 bg-light rounded-4 h-100">
                   <div class="card-body">
                     <div class="small-muted">Order Date</div>
                     <strong>${formatDate(order.order_date)}</strong>
@@ -514,8 +772,8 @@ function renderOrderCard(order) {
                 </div>
               </div>
 
-              <div class="col-md-4">
-                <div class="card border-0 bg-light rounded-4">
+              <div class="col-md-3">
+                <div class="card border-0 bg-light rounded-4 h-100">
                   <div class="card-body">
                     <div class="small-muted">Return Date</div>
                     <strong>${formatDate(order.return_date)}</strong>
@@ -523,11 +781,20 @@ function renderOrderCard(order) {
                 </div>
               </div>
 
-              <div class="col-md-4">
-                <div class="card border-0 bg-light rounded-4">
+              <div class="col-md-3">
+                <div class="card border-0 bg-light rounded-4 h-100">
                   <div class="card-body">
-                    <div class="small-muted">Payment Status</div>
-                    <strong>${escapeHtml(prettifyStatus(order.payment_status))}</strong>
+                    <div class="small-muted">Paid</div>
+                    <strong>${formatMoney(order.paid_amount)}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-3">
+                <div class="card border-0 bg-light rounded-4 h-100">
+                  <div class="card-body">
+                    <div class="small-muted">Remaining</div>
+                    <strong>${formatMoney(remaining)}</strong>
                   </div>
                 </div>
               </div>
@@ -559,46 +826,39 @@ function renderAppointments(appointments) {
 
   return `
     <div class="mb-4">
-      <h5>Appointments</h5>
+      <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2">
+        <h5 class="mb-0">Appointments</h5>
+        <span class="badge-soft px-3 py-2 rounded-pill">
+          ${appointments.length}
+        </span>
+      </div>
 
-      <div class="table-responsive">
-        <table class="table table-sm">
-
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Time</th>
-              <th>Type</th>
-              <th>Status</th>
-              <th>Change</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            ${appointments
+      <div class="row g-3">
+        ${appointments
       .map(
         (a) => `
-              <tr>
-                <td>${formatDate(a.appointment_date)}</td>
+              <div class="col-md-6">
+                <div class="border rounded-4 p-3 h-100">
+                  <div class="d-flex justify-content-between gap-2 mb-2">
+                    <strong>
+                      ${formatDate(a.appointment_date)}
+                      ·
+                      ${formatTime(a.appointment_time)}
+                    </strong>
 
-                <td>${formatTime(a.appointment_time)}</td>
+                    ${statusBadge(a.status)}
+                  </div>
 
-                <td>${escapeHtml(a.type || a.appointment_type || "-")}</td>
+                  <div class="small-muted mb-2">
+                    ${escapeHtml(a.type || a.appointment_type || "-")}
+                  </div>
 
-                <td>
-                  ${escapeHtml(prettifyStatus(a.status || "-"))}
-                </td>
-
-                <td>
                   ${renderChangeRequestButton(a)}
-                </td>
-              </tr>
+                </div>
+              </div>
             `
       )
       .join("")}
-          </tbody>
-
-        </table>
       </div>
     </div>
   `;
@@ -614,7 +874,7 @@ function renderChangeRequestButton(appointment) {
   ) {
     return `
       <span class="small-muted">
-        Not available
+        Change not available
       </span>
     `;
   }
@@ -652,7 +912,7 @@ function renderChangeRequestButton(appointment) {
 
         <div class="col-md-4">
           <button
-            class="btn btn-sm btn-dark w-100"
+            class="btn btn-sm btn-primary w-100"
             onclick="submitAppointmentChangeRequest(${Number(appointment.appointment_id)}, ${Number(appointment.order_id)})"
           >
             Submit
@@ -667,6 +927,7 @@ function renderChangeRequestButton(appointment) {
           rows="2"
           placeholder="Reason / notes..."
           id="change_reason_${appointment.appointment_id}"
+          style="height:auto !important;"
         ></textarea>
       </div>
     </div>

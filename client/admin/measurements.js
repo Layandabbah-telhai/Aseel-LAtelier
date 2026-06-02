@@ -13,6 +13,8 @@ const measurementsCount = document.getElementById("measurementsCount");
 const tbody = document.getElementById("measurementsTbody");
 const form = document.getElementById("measurementForm");
 const cancelEditBtn = document.getElementById("cancelEditBtn");
+const measurementFormCard = document.getElementById("measurementFormCard");
+const newMeasurementBtn = document.getElementById("newMeasurementBtn");
 
 const measurementId = document.getElementById("measurement_id");
 const customerId = document.getElementById("customer_id");
@@ -28,6 +30,18 @@ const notes = document.getElementById("notes");
 
 let customersCache = [];
 let ordersCache = [];
+
+function showMeasurementForm() {
+  if (measurementFormCard) {
+    measurementFormCard.style.display = "";
+  }
+}
+
+function hideMeasurementForm() {
+  if (measurementFormCard) {
+    measurementFormCard.style.display = "none";
+  }
+}
 
 if (apiText) {
   apiText.textContent = urlOrderId
@@ -242,6 +256,8 @@ function renderMeasurements(rows) {
 }
 
 window.editMeasurement = async function (id) {
+  showMeasurementForm();
+
   try {
     const m = await fetchJson(`${MEASUREMENTS_ENDPOINT}/${id}`);
 
@@ -276,6 +292,10 @@ window.deleteMeasurement = async function (id) {
 
     await loadMeasurements();
     clearForm();
+
+    if (!urlOrderId) {
+      hideMeasurementForm();
+    }
   } catch (err) {
     alert(err.message || "Failed to delete measurement");
   }
@@ -361,7 +381,18 @@ function clearForm() {
 }
 
 customerId?.addEventListener("change", renderOrderOptions);
-cancelEditBtn?.addEventListener("click", clearForm);
+cancelEditBtn?.addEventListener("click", () => {
+  clearForm();
+
+  if (!urlOrderId) {
+    hideMeasurementForm();
+  }
+});
+
+newMeasurementBtn?.addEventListener("click", () => {
+  clearForm();
+  showMeasurementForm();
+});
 
 (async function initMeasurementsPage() {
   try {
@@ -374,16 +405,12 @@ cancelEditBtn?.addEventListener("click", clearForm);
 
     await loadMeasurements();
 
-    const params =
-      new URLSearchParams(window.location.search);
-
-    const orderId =
-      params.get("order_id");
-
-    if (orderId && orderSelect) {
-
-      orderSelect.value =
-        orderId;
+    if (urlOrderId) {
+      customerId.disabled = true;
+      orderId.disabled = true;
+      showMeasurementForm();
+    } else {
+      hideMeasurementForm();
     }
 
   } catch (err) {

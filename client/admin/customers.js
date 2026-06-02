@@ -58,6 +58,47 @@ const sourceDetails =
 const sourceDetailsWrap =
   document.getElementById("sourceDetailsWrap");
 
+const customerFormPanel =
+  document.getElementById("customerFormPanel");
+
+const toggleCustomerFormBtn =
+  document.getElementById("toggleCustomerFormBtn");
+
+
+function showCustomerForm() {
+  if (customerFormPanel) {
+    customerFormPanel.style.display = "";
+  }
+
+  if (toggleCustomerFormBtn) {
+    toggleCustomerFormBtn.textContent = "Hide Form";
+  }
+}
+
+function hideCustomerForm() {
+  if (customerFormPanel) {
+    customerFormPanel.style.display = "none";
+  }
+
+  if (toggleCustomerFormBtn) {
+    toggleCustomerFormBtn.textContent = "+ Add Customer";
+  }
+}
+
+function toggleCustomerForm() {
+  if (!customerFormPanel) return;
+
+  const isHidden =
+    customerFormPanel.style.display === "none";
+
+  if (isHidden) {
+    clearForm();
+    showCustomerForm();
+  } else {
+    hideCustomerForm();
+  }
+}
+
 if (apiText) {
   apiText.textContent = ENDPOINT;
 }
@@ -259,6 +300,8 @@ function renderCustomers(rows) {
 window.editCustomer =
   async function (id) {
 
+    showCustomerForm();
+
     try {
 
       const res =
@@ -430,6 +473,7 @@ form?.addEventListener(
       }
 
       clearForm();
+      hideCustomerForm();
 
       loadCustomers(
         searchInput.value.trim()
@@ -479,7 +523,15 @@ resetBtn?.addEventListener(
 
 cancelEditBtn?.addEventListener(
   "click",
-  clearForm
+  () => {
+    clearForm();
+    hideCustomerForm();
+  }
+);
+
+toggleCustomerFormBtn?.addEventListener(
+  "click",
+  toggleCustomerForm
 );
 
 sourceType?.addEventListener(
@@ -488,6 +540,8 @@ sourceType?.addEventListener(
 );
 
 (async function () {
+
+  hideCustomerForm();
 
   await loadCustomers();
 
