@@ -261,9 +261,9 @@ function renderOrders() {
 
         <td>
           ${text(
-            o.customer_name ||
-            `${o.first_name || ""} ${o.last_name || ""}`.trim()
-          )}
+      o.customer_name ||
+      `${o.first_name || ""} ${o.last_name || ""}`.trim()
+    )}
         </td>
 
         <td>
@@ -712,10 +712,25 @@ totalPriceInput?.addEventListener(
     priceWasAutoFilled = false;
   }
 );
-(async function init() {
+let isLoadingOrders = false;
+let didInitialLoad = false;
+
+async function refreshOrders() {
+  if (!didInitialLoad) return;
+  if (isLoadingOrders) return;
 
   try {
+    isLoadingOrders = true;
+    await loadOrders();
+  } catch (err) {
+    console.warn("Failed to refresh orders:", err);
+  } finally {
+    isLoadingOrders = false;
+  }
+}
 
+(async function init() {
+  try {
     await Promise.all([
       loadCustomers(),
       loadDresses(),
@@ -726,6 +741,8 @@ totalPriceInput?.addEventListener(
 
     await loadOrders();
 
+    didInitialLoad = true;
+
     const params = new URLSearchParams(window.location.search);
     const editOrderId = params.get("edit_order_id");
 
@@ -734,7 +751,14 @@ totalPriceInput?.addEventListener(
     }
 
   } catch (err) {
-
     alert(err.message);
   }
 })();
+
+window.addEventListener("focus", refreshOrders);
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    refreshOrders();
+  }
+});
